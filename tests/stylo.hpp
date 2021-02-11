@@ -103701,7 +103701,7 @@ class nsIExpandedPrincipal : public nsISupports {
   template<typename T, typename U> struct COMTypeInfo;
 
 
-  virtual nsresult GetWhiteList(nsTArray<nsCOMPtr<nsIPrincipal> > **aWhiteList) = 0;
+  virtual nsresult GetAllowList(nsTArray<nsCOMPtr<nsIPrincipal> > **anAllowList) = 0;
 
 };
 
