@@ -20,6 +20,7 @@ impl VisitMut for Visitor {
                     attrs,
                     abi,
                     brace_token,
+                    unsafety,
                     items: extern_block_items,
                 }) = item
                 {
@@ -45,6 +46,7 @@ impl VisitMut for Visitor {
                             attrs,
                             abi,
                             brace_token,
+                            unsafety,
                             items: extern_block_items,
                         });
                     }
