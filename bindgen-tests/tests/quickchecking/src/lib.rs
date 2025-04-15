@@ -3,38 +3,27 @@
 //! ## Example
 //!
 //! ```rust
-//! extern crate quickcheck;
-//! extern crate quickchecking;
-//! extern crate rand;
-//! use quickcheck::{Arbitrary, Gen, StdGen};
+//! use quickcheck::{Arbitrary, Gen};
 //! use quickchecking::fuzzers;
-//! use rand::thread_rng;
 //!
 //! fn main() {
 //!     let generate_range: usize = 10; // Determines things like the length of
 //!                                     // arbitrary vectors generated.
 //!     let header = fuzzers::HeaderC::arbitrary(
-//!        &mut StdGen::new(thread_rng(), generate_range));
+//!        &mut Gen::new(generate_range));
 //!     println!("{}", header);
 //! }
 //! ```
-//!
 #![deny(missing_docs)]
-#[macro_use]
-extern crate lazy_static;
-extern crate quickcheck;
-extern crate rand;
-extern crate tempdir;
 
-use quickcheck::{QuickCheck, StdGen, TestResult};
-use rand::thread_rng;
+use quickcheck::{Gen, QuickCheck, TestResult};
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::Mutex;
-use tempdir::TempDir;
+use tempfile::Builder;
 
 /// Contains definitions of and impls for types used to fuzz C declarations.
 pub mod fuzzers;
@@ -46,17 +35,14 @@ struct Context {
 }
 
 // Initialize global context.
-lazy_static! {
-    static ref CONTEXT: Mutex<Context> =
-        Mutex::new(Context { output_path: None });
-}
+static CONTEXT: Mutex<Context> = Mutex::new(Context { output_path: None });
 
 // Passes fuzzed header to the `csmith-fuzzing/predicate.py` script, returns
 // output of the associated command.
 fn run_predicate_script(
     header: fuzzers::HeaderC,
 ) -> Result<Output, Box<dyn Error>> {
-    let dir = TempDir::new("bindgen_prop")?;
+    let dir = Builder::new().prefix("bindgen_prop").tempdir()?;
     let header_path = dir.path().join("prop_test.h");
 
     let mut header_file = File::create(&header_path)?;
@@ -86,7 +72,7 @@ fn run_predicate_script(
             .output()?;
     }
 
-    Ok(Command::new(&predicate_script_path_string)
+    Ok(Command::new(predicate_script_path_string)
         .arg(&header_path_string)
         .output()?)
 }
@@ -110,16 +96,15 @@ fn bindgen_prop(header: fuzzers::HeaderC) -> TestResult {
 /// to the `csmith-fuzzing/predicate.py` script.
 pub fn test_bindgen(
     generate_range: usize,
-    tests: usize,
-    output_path: Option<&str>,
+    tests: u64,
+    output_path: Option<&Path>,
 ) {
     if let Some(path) = output_path {
-        CONTEXT.lock().unwrap().output_path =
-            Some(String::from(PathBuf::from(path).to_str().unwrap()));
+        CONTEXT.lock().unwrap().output_path = Some(path.display().to_string());
     }
 
     QuickCheck::new()
         .tests(tests)
-        .gen(StdGen::new(thread_rng(), generate_range))
+        .gen(Gen::new(generate_range))
         .quickcheck(bindgen_prop as fn(fuzzers::HeaderC) -> TestResult)
 }
