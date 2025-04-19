@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct __BindgenUnionField<T>(::std::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
@@ -24,7 +30,7 @@ impl<T> ::std::default::Default for __BindgenUnionField<T> {
 impl<T> ::std::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::std::marker::Copy for __BindgenUnionField<T> {}
@@ -67,7 +73,8 @@ pub struct TErrorResult_DOMExceptionInfo {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct TErrorResult__bindgen_ty_1 {
     pub mMessage: __BindgenUnionField<*mut TErrorResult_Message>,
-    pub mDOMExceptionInfo: __BindgenUnionField<*mut TErrorResult_DOMExceptionInfo>,
+    pub mDOMExceptionInfo:
+        __BindgenUnionField<*mut TErrorResult_DOMExceptionInfo>,
     pub bindgen_union_field: u64,
 }
 impl Default for TErrorResult {

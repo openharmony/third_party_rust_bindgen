@@ -5,6 +5,7 @@ use super::context::{BindgenContext, ItemId, TypeId};
 use super::dot::DotAttributes;
 use super::enum_ty::Enum;
 use super::function::FunctionSig;
+use super::int::IntKind;
 use super::item::{IsOpaque, Item};
 use super::layout::{Layout, Opaque};
 use super::objc::ObjCInterface;
@@ -17,15 +18,13 @@ use crate::parse::{ParseError, ParseResult};
 use std::borrow::Cow;
 use std::io;
 
-pub use super::int::IntKind;
-
 /// The base representation of a type in bindgen.
 ///
 /// A type has an optional name, which if present cannot be empty, a `layout`
 /// (size, alignment and packedness) if known, a `Kind`, which determines which
 /// kind of type it is, and whether the type is const.
 #[derive(Debug)]
-pub(crate) struct Type {
+pub struct Type {
     /// The name of the type, or None if it was an unnamed struct or union.
     name: Option<String>,
     /// The layout of the type, if known.
@@ -40,12 +39,21 @@ pub(crate) struct Type {
 /// traits, and so if we have a type containing an array with more than this
 /// many items, we won't be able to derive common traits on that type.
 ///
-pub(crate) const RUST_DERIVE_IN_ARRAY_LIMIT: usize = 32;
+pub const RUST_DERIVE_IN_ARRAY_LIMIT: usize = 32;
 
 impl Type {
+    /// Get the underlying `CompInfo` for this type, or `None` if this is some
+    /// other kind of type.
+    pub fn as_comp(&self) -> Option<&CompInfo> {
+        match self.kind {
+            TypeKind::Comp(ref ci) => Some(ci),
+            _ => None,
+        }
+    }
+
     /// Get the underlying `CompInfo` for this type as a mutable reference, or
     /// `None` if this is some other kind of type.
-    pub(crate) fn as_comp_mut(&mut self) -> Option<&mut CompInfo> {
+    pub fn as_comp_mut(&mut self) -> Option<&mut CompInfo> {
         match self.kind {
             TypeKind::Comp(ref mut ci) => Some(ci),
             _ => None,
@@ -53,7 +61,7 @@ impl Type {
     }
 
     /// Construct a new `Type`.
-    pub(crate) fn new(
+    pub fn new(
         name: Option<String>,
         layout: Option<Layout>,
         kind: TypeKind,
@@ -68,37 +76,37 @@ impl Type {
     }
 
     /// Which kind of type is this?
-    pub(crate) fn kind(&self) -> &TypeKind {
+    pub fn kind(&self) -> &TypeKind {
         &self.kind
     }
 
     /// Get a mutable reference to this type's kind.
-    pub(crate) fn kind_mut(&mut self) -> &mut TypeKind {
+    pub fn kind_mut(&mut self) -> &mut TypeKind {
         &mut self.kind
     }
 
     /// Get this type's name.
-    pub(crate) fn name(&self) -> Option<&str> {
+    pub fn name(&self) -> Option<&str> {
         self.name.as_deref()
     }
 
     /// Whether this is a block pointer type.
-    pub(crate) fn is_block_pointer(&self) -> bool {
+    pub fn is_block_pointer(&self) -> bool {
         matches!(self.kind, TypeKind::BlockPointer(..))
     }
 
     /// Is this an integer type, including `bool` or `char`?
-    pub(crate) fn is_int(&self) -> bool {
+    pub fn is_int(&self) -> bool {
         matches!(self.kind, TypeKind::Int(_))
     }
 
     /// Is this a compound type?
-    pub(crate) fn is_comp(&self) -> bool {
+    pub fn is_comp(&self) -> bool {
         matches!(self.kind, TypeKind::Comp(..))
     }
 
     /// Is this a union?
-    pub(crate) fn is_union(&self) -> bool {
+    pub fn is_union(&self) -> bool {
         match self.kind {
             TypeKind::Comp(ref comp) => comp.is_union(),
             _ => false,
@@ -106,31 +114,32 @@ impl Type {
     }
 
     /// Is this type of kind `TypeKind::TypeParam`?
-    pub(crate) fn is_type_param(&self) -> bool {
+    pub fn is_type_param(&self) -> bool {
         matches!(self.kind, TypeKind::TypeParam)
     }
 
     /// Is this a template instantiation type?
-    pub(crate) fn is_template_instantiation(&self) -> bool {
+    pub fn is_template_instantiation(&self) -> bool {
         matches!(self.kind, TypeKind::TemplateInstantiation(..))
     }
 
+    /// Is this a template alias type?
+    pub fn is_template_alias(&self) -> bool {
+        matches!(self.kind, TypeKind::TemplateAlias(..))
+    }
+
     /// Is this a function type?
-    pub(crate) fn is_function(&self) -> bool {
+    pub fn is_function(&self) -> bool {
         matches!(self.kind, TypeKind::Function(..))
     }
 
     /// Is this an enum type?
-    pub(crate) fn is_enum(&self) -> bool {
+    pub fn is_enum(&self) -> bool {
         matches!(self.kind, TypeKind::Enum(..))
     }
 
-    /// Is this void?
-    pub(crate) fn is_void(&self) -> bool {
-        matches!(self.kind, TypeKind::Void)
-    }
     /// Is this either a builtin or named type?
-    pub(crate) fn is_builtin_or_type_param(&self) -> bool {
+    pub fn is_builtin_or_type_param(&self) -> bool {
         matches!(
             self.kind,
             TypeKind::Void |
@@ -146,29 +155,29 @@ impl Type {
     }
 
     /// Creates a new named type, with name `name`.
-    pub(crate) fn named(name: String) -> Self {
+    pub fn named(name: String) -> Self {
         let name = if name.is_empty() { None } else { Some(name) };
         Self::new(name, None, TypeKind::TypeParam, false)
     }
 
     /// Is this a floating point type?
-    pub(crate) fn is_float(&self) -> bool {
+    pub fn is_float(&self) -> bool {
         matches!(self.kind, TypeKind::Float(..))
     }
 
     /// Is this a boolean type?
-    pub(crate) fn is_bool(&self) -> bool {
+    pub fn is_bool(&self) -> bool {
         matches!(self.kind, TypeKind::Int(IntKind::Bool))
     }
 
     /// Is this an integer type?
-    pub(crate) fn is_integer(&self) -> bool {
+    pub fn is_integer(&self) -> bool {
         matches!(self.kind, TypeKind::Int(..))
     }
 
     /// Cast this type to an integer kind, or `None` if it is not an integer
     /// type.
-    pub(crate) fn as_integer(&self) -> Option<IntKind> {
+    pub fn as_integer(&self) -> Option<IntKind> {
         match self.kind {
             TypeKind::Int(int_kind) => Some(int_kind),
             _ => None,
@@ -176,20 +185,25 @@ impl Type {
     }
 
     /// Is this a `const` qualified type?
-    pub(crate) fn is_const(&self) -> bool {
+    pub fn is_const(&self) -> bool {
         self.is_const
     }
 
+    /// Is this a reference to another type?
+    pub fn is_type_ref(&self) -> bool {
+        matches!(
+            self.kind,
+            TypeKind::ResolvedTypeRef(_) | TypeKind::UnresolvedTypeRef(_, _, _)
+        )
+    }
+
     /// Is this an unresolved reference?
-    pub(crate) fn is_unresolved_ref(&self) -> bool {
+    pub fn is_unresolved_ref(&self) -> bool {
         matches!(self.kind, TypeKind::UnresolvedTypeRef(_, _, _))
     }
 
     /// Is this a incomplete array type?
-    pub(crate) fn is_incomplete_array(
-        &self,
-        ctx: &BindgenContext,
-    ) -> Option<ItemId> {
+    pub fn is_incomplete_array(&self, ctx: &BindgenContext) -> Option<ItemId> {
         match self.kind {
             TypeKind::Array(item, len) => {
                 if len == 0 {
@@ -206,14 +220,13 @@ impl Type {
     }
 
     /// What is the layout of this type?
-    pub(crate) fn layout(&self, ctx: &BindgenContext) -> Option<Layout> {
+    pub fn layout(&self, ctx: &BindgenContext) -> Option<Layout> {
         self.layout.or_else(|| {
             match self.kind {
                 TypeKind::Comp(ref ci) => ci.layout(ctx),
-                TypeKind::Array(inner, 0) => Some(Layout::new(
-                    0,
-                    ctx.resolve_type(inner).layout(ctx)?.align,
-                )),
+                TypeKind::Array(inner, length) if length == 0 => Some(
+                    Layout::new(0, ctx.resolve_type(inner).layout(ctx)?.align),
+                ),
                 // FIXME(emilio): This is a hack for anonymous union templates.
                 // Use the actual pointer size!
                 TypeKind::Pointer(..) => Some(Layout::new(
@@ -232,7 +245,7 @@ impl Type {
     /// avoid generating invalid code with some cases we can't handle, see:
     ///
     /// tests/headers/381-decltype-alias.hpp
-    pub(crate) fn is_invalid_type_param(&self) -> bool {
+    pub fn is_invalid_type_param(&self) -> bool {
         match self.kind {
             TypeKind::TypeParam => {
                 let name = self.name().expect("Unnamed named type?");
@@ -252,8 +265,8 @@ impl Type {
         Cow::Owned(name)
     }
 
-    /// Get this type's sanitized name.
-    pub(crate) fn sanitized_name<'a>(
+    /// Get this type's santizied name.
+    pub fn sanitized_name<'a>(
         &'a self,
         ctx: &BindgenContext,
     ) -> Option<Cow<'a, str>> {
@@ -276,7 +289,7 @@ impl Type {
     }
 
     /// See safe_canonical_type.
-    pub(crate) fn canonical_type<'tr>(
+    pub fn canonical_type<'tr>(
         &'tr self,
         ctx: &'tr BindgenContext,
     ) -> &'tr Type {
@@ -289,7 +302,7 @@ impl Type {
     /// For example, for a `typedef`, the canonical type would be the
     /// `typedef`ed type, for a template instantiation, would be the template
     /// its specializing, and so on. Return None if the type is unresolved.
-    pub(crate) fn safe_canonical_type<'tr>(
+    pub fn safe_canonical_type<'tr>(
         &'tr self,
         ctx: &'tr BindgenContext,
     ) -> Option<&'tr Type> {
@@ -328,7 +341,7 @@ impl Type {
 
     /// There are some types we don't want to stop at when finding an opaque
     /// item, so we can arrive to the proper item that needs to be generated.
-    pub(crate) fn should_be_traced_unconditionally(&self) -> bool {
+    pub fn should_be_traced_unconditionally(&self) -> bool {
         matches!(
             self.kind,
             TypeKind::Comp(..) |
@@ -498,7 +511,7 @@ fn is_invalid_type_param_invalid_start() {
 }
 
 #[test]
-fn is_invalid_type_param_invalid_remaining() {
+fn is_invalid_type_param_invalid_remaing() {
     let ty = Type::new(Some("foo-".into()), None, TypeKind::TypeParam, false);
     assert!(ty.is_invalid_type_param())
 }
@@ -557,9 +570,7 @@ impl TemplateParameters for TypeKind {
 
 /// The kind of float this type represents.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum FloatKind {
-    /// A half (`_Float16` or `__fp16`)
-    Float16,
+pub enum FloatKind {
     /// A `float`.
     Float,
     /// A `double`.
@@ -572,7 +583,7 @@ pub(crate) enum FloatKind {
 
 /// The different kinds of types that we can parse.
 #[derive(Debug)]
-pub(crate) enum TypeKind {
+pub enum TypeKind {
     /// The void type.
     Void,
 
@@ -669,7 +680,7 @@ impl Type {
     ///
     /// It's sort of nasty and full of special-casing, but hopefully the
     /// comments in every special case justify why they're there.
-    pub(crate) fn from_clang_ty(
+    pub fn from_clang_ty(
         potential_id: ItemId,
         ty: &clang::Type,
         location: Cursor,
@@ -719,7 +730,7 @@ impl Type {
         // Objective C template type parameter
         // FIXME: This is probably wrong, we are attempting to find the
         //        objc template params, which seem to manifest as a typedef.
-        //        We are rewriting them as ID to suppress multiple conflicting
+        //        We are rewriting them as id to suppress multiple conflicting
         //        typedefs at root level
         if ty_kind == CXType_Typedef {
             let is_template_type_param =
@@ -1092,7 +1103,7 @@ impl Type {
                         Item::from_ty_or_ref(inner, location, None, ctx);
                     if inner_id == potential_id {
                         warn!(
-                            "Generating opaque type instead of self-referential \
+                            "Generating oqaque type instead of self-referential \
                             typedef");
                         // This can happen if we bail out of recursive situations
                         // within the clang parsing.

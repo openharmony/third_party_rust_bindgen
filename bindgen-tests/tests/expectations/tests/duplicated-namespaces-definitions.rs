@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
 pub mod root {
     #[allow(unused_imports)]
@@ -12,13 +18,46 @@ pub mod root {
             pub foo: ::std::os::raw::c_int,
             pub baz: bool,
         }
-        #[allow(clippy::unnecessary_operation, clippy::identity_op)]
-        const _: () = {
-            ["Size of Bar"][::std::mem::size_of::<Bar>() - 8usize];
-            ["Alignment of Bar"][::std::mem::align_of::<Bar>() - 4usize];
-            ["Offset of field: Bar::foo"][::std::mem::offset_of!(Bar, foo) - 0usize];
-            ["Offset of field: Bar::baz"][::std::mem::offset_of!(Bar, baz) - 4usize];
-        };
+        #[test]
+        fn bindgen_test_layout_Bar() {
+            const UNINIT: ::std::mem::MaybeUninit<Bar> =
+                ::std::mem::MaybeUninit::uninit();
+            let ptr = UNINIT.as_ptr();
+            assert_eq!(
+                ::std::mem::size_of::<Bar>(),
+                8usize,
+                concat!("Size of: ", stringify!(Bar))
+            );
+            assert_eq!(
+                ::std::mem::align_of::<Bar>(),
+                4usize,
+                concat!("Alignment of ", stringify!(Bar))
+            );
+            assert_eq!(
+                unsafe {
+                    ::std::ptr::addr_of!((*ptr).foo) as usize - ptr as usize
+                },
+                0usize,
+                concat!(
+                    "Offset of field: ",
+                    stringify!(Bar),
+                    "::",
+                    stringify!(foo)
+                )
+            );
+            assert_eq!(
+                unsafe {
+                    ::std::ptr::addr_of!((*ptr).baz) as usize - ptr as usize
+                },
+                4usize,
+                concat!(
+                    "Offset of field: ",
+                    stringify!(Bar),
+                    "::",
+                    stringify!(baz)
+                )
+            );
+        }
     }
     pub mod bar {
         #[allow(unused_imports)]
@@ -28,12 +67,34 @@ pub mod root {
         pub struct Foo {
             pub ptr: *mut root::foo::Bar,
         }
-        #[allow(clippy::unnecessary_operation, clippy::identity_op)]
-        const _: () = {
-            ["Size of Foo"][::std::mem::size_of::<Foo>() - 8usize];
-            ["Alignment of Foo"][::std::mem::align_of::<Foo>() - 8usize];
-            ["Offset of field: Foo::ptr"][::std::mem::offset_of!(Foo, ptr) - 0usize];
-        };
+        #[test]
+        fn bindgen_test_layout_Foo() {
+            const UNINIT: ::std::mem::MaybeUninit<Foo> =
+                ::std::mem::MaybeUninit::uninit();
+            let ptr = UNINIT.as_ptr();
+            assert_eq!(
+                ::std::mem::size_of::<Foo>(),
+                8usize,
+                concat!("Size of: ", stringify!(Foo))
+            );
+            assert_eq!(
+                ::std::mem::align_of::<Foo>(),
+                8usize,
+                concat!("Alignment of ", stringify!(Foo))
+            );
+            assert_eq!(
+                unsafe {
+                    ::std::ptr::addr_of!((*ptr).ptr) as usize - ptr as usize
+                },
+                0usize,
+                concat!(
+                    "Offset of field: ",
+                    stringify!(Foo),
+                    "::",
+                    stringify!(ptr)
+                )
+            );
+        }
         impl Default for Foo {
             fn default() -> Self {
                 let mut s = ::std::mem::MaybeUninit::<Self>::uninit();

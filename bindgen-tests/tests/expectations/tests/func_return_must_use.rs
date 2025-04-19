@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 pub type MustUseInt = ::std::os::raw::c_int;
 extern "C" {
     #[must_use]
@@ -28,11 +34,19 @@ extern "C" {
 #[derive(Debug, Default, Copy, Clone)]
 #[must_use]
 pub struct AnnotatedStruct {}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of AnnotatedStruct"][::std::mem::size_of::<AnnotatedStruct>() - 0usize];
-    ["Alignment of AnnotatedStruct"][::std::mem::align_of::<AnnotatedStruct>() - 1usize];
-};
+#[test]
+fn bindgen_test_layout_AnnotatedStruct() {
+    assert_eq!(
+        ::std::mem::size_of::<AnnotatedStruct>(),
+        0usize,
+        concat!("Size of: ", stringify!(AnnotatedStruct))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<AnnotatedStruct>(),
+        1usize,
+        concat!("Alignment of ", stringify!(AnnotatedStruct))
+    );
+}
 extern "C" {
     #[must_use]
     pub fn return_annotated_struct() -> AnnotatedStruct;
@@ -40,11 +54,19 @@ extern "C" {
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct PlainStruct {}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of PlainStruct"][::std::mem::size_of::<PlainStruct>() - 0usize];
-    ["Alignment of PlainStruct"][::std::mem::align_of::<PlainStruct>() - 1usize];
-};
+#[test]
+fn bindgen_test_layout_PlainStruct() {
+    assert_eq!(
+        ::std::mem::size_of::<PlainStruct>(),
+        0usize,
+        concat!("Size of: ", stringify!(PlainStruct))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<PlainStruct>(),
+        1usize,
+        concat!("Alignment of ", stringify!(PlainStruct))
+    );
+}
 /// <div rustbindgen mustusetype></div>
 pub type TypedefPlainStruct = PlainStruct;
 extern "C" {

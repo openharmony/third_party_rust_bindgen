@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct TErrorResult {
     pub mResult: ::std::os::raw::c_int,
@@ -7,7 +13,8 @@ pub struct TErrorResult {
     pub mUnionState: TErrorResult_UnionState,
 }
 impl TErrorResult_UnionState {
-    pub const HasException: TErrorResult_UnionState = TErrorResult_UnionState::HasMessage;
+    pub const HasException: TErrorResult_UnionState =
+        TErrorResult_UnionState::HasMessage;
 }
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -51,11 +58,19 @@ impl Default for TErrorResult {
 pub struct ErrorResult {
     pub _base: TErrorResult,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of ErrorResult"][::std::mem::size_of::<ErrorResult>() - 24usize];
-    ["Alignment of ErrorResult"][::std::mem::align_of::<ErrorResult>() - 8usize];
-};
+#[test]
+fn bindgen_test_layout_ErrorResult() {
+    assert_eq!(
+        ::std::mem::size_of::<ErrorResult>(),
+        24usize,
+        concat!("Size of: ", stringify!(ErrorResult))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<ErrorResult>(),
+        8usize,
+        concat!("Alignment of ", stringify!(ErrorResult))
+    );
+}
 impl Default for ErrorResult {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
@@ -65,12 +80,22 @@ impl Default for ErrorResult {
         }
     }
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    [
-        "Size of template specialization: TErrorResult_open0_int_close0",
-    ][::std::mem::size_of::<TErrorResult>() - 24usize];
-    [
-        "Align of template specialization: TErrorResult_open0_int_close0",
-    ][::std::mem::align_of::<TErrorResult>() - 8usize];
-};
+#[test]
+fn __bindgen_test_layout_TErrorResult_open0_int_close0_instantiation() {
+    assert_eq!(
+        ::std::mem::size_of::<TErrorResult>(),
+        24usize,
+        concat!(
+            "Size of template specialization: ",
+            stringify!(TErrorResult)
+        )
+    );
+    assert_eq!(
+        ::std::mem::align_of::<TErrorResult>(),
+        8usize,
+        concat!(
+            "Alignment of template specialization: ",
+            stringify!(TErrorResult)
+        )
+    );
+}

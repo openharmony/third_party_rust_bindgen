@@ -22,7 +22,7 @@ use crate::{HashMap, HashSet};
 ///   float if any of the template arguments or template definition
 ///   has.
 #[derive(Debug, Clone)]
-pub(crate) struct HasFloat<'ctx> {
+pub struct HasFloat<'ctx> {
     ctx: &'ctx BindgenContext,
 
     // The incremental result of this analysis's computation. Everything in this

@@ -21,7 +21,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 ///
 /// Also protocols and categories are parsed as this type
 #[derive(Debug)]
-pub(crate) struct ObjCInterface {
+pub struct ObjCInterface {
     /// The name
     /// like, NSObject
     name: String,
@@ -31,15 +31,15 @@ pub(crate) struct ObjCInterface {
     is_protocol: bool,
 
     /// The list of template names almost always, ObjectType or KeyType
-    pub(crate) template_names: Vec<String>,
+    pub template_names: Vec<String>,
 
     /// The list of protocols that this interface conforms to.
-    pub(crate) conforms_to: Vec<ItemId>,
+    pub conforms_to: Vec<ItemId>,
 
     /// The direct parent for this interface.
-    pub(crate) parent_class: Option<ItemId>,
+    pub parent_class: Option<ItemId>,
 
-    /// List of the methods defined in this interface
+    /// List of the methods defined in this interfae
     methods: Vec<ObjCMethod>,
 
     class_methods: Vec<ObjCMethod>,
@@ -47,7 +47,7 @@ pub(crate) struct ObjCInterface {
 
 /// The objective c methods
 #[derive(Debug)]
-pub(crate) struct ObjCMethod {
+pub struct ObjCMethod {
     /// The original method selector name
     /// like, dataWithBytes:length:
     name: String,
@@ -78,14 +78,14 @@ impl ObjCInterface {
 
     /// The name
     /// like, NSObject
-    pub(crate) fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         self.name.as_ref()
     }
 
     /// Formats the name for rust
     /// Can be like NSObject, but with categories might be like NSObject_NSCoderMethods
     /// and protocols are like PNSObject
-    pub(crate) fn rust_name(&self) -> String {
+    pub fn rust_name(&self) -> String {
         if let Some(ref cat) = self.category {
             format!("{}_{}", self.name(), cat)
         } else if self.is_protocol {
@@ -96,32 +96,32 @@ impl ObjCInterface {
     }
 
     /// Is this a template interface?
-    pub(crate) fn is_template(&self) -> bool {
+    pub fn is_template(&self) -> bool {
         !self.template_names.is_empty()
     }
 
     /// List of the methods defined in this interface
-    pub(crate) fn methods(&self) -> &Vec<ObjCMethod> {
+    pub fn methods(&self) -> &Vec<ObjCMethod> {
         &self.methods
     }
 
     /// Is this a protocol?
-    pub(crate) fn is_protocol(&self) -> bool {
+    pub fn is_protocol(&self) -> bool {
         self.is_protocol
     }
 
     /// Is this a category?
-    pub(crate) fn is_category(&self) -> bool {
+    pub fn is_category(&self) -> bool {
         self.category.is_some()
     }
 
     /// List of the class methods defined in this interface
-    pub(crate) fn class_methods(&self) -> &Vec<ObjCMethod> {
+    pub fn class_methods(&self) -> &Vec<ObjCMethod> {
         &self.class_methods
     }
 
     /// Parses the Objective C interface from the cursor
-    pub(crate) fn from_ty(
+    pub fn from_ty(
         cursor: &clang::Cursor,
         ctx: &mut BindgenContext,
     ) -> Option<Self> {
@@ -137,7 +137,7 @@ impl ObjCInterface {
                 CXCursor_ObjCClassRef => {
                     if cursor.kind() == CXCursor_ObjCCategoryDecl {
                         // We are actually a category extension, and we found the reference
-                        // to the original interface, so name this interface appropriately
+                        // to the original interface, so name this interface approriately
                         interface.name = c.spelling();
                         interface.category = Some(cursor.spelling());
                     }
@@ -229,60 +229,44 @@ impl ObjCMethod {
         }
     }
 
+    /// The original method selector name
+    /// like, dataWithBytes:length:
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
     /// Method name as converted to rust
     /// like, dataWithBytes_length_
-    pub(crate) fn rust_name(&self) -> &str {
+    pub fn rust_name(&self) -> &str {
         self.rust_name.as_ref()
     }
 
     /// Returns the methods signature as FunctionSig
-    pub(crate) fn signature(&self) -> &FunctionSig {
+    pub fn signature(&self) -> &FunctionSig {
         &self.signature
     }
 
     /// Is this a class method?
-    pub(crate) fn is_class_method(&self) -> bool {
+    pub fn is_class_method(&self) -> bool {
         self.is_class_method
     }
 
     /// Formats the method call
-    pub(crate) fn format_method_call(
-        &self,
-        args: &[TokenStream],
-    ) -> TokenStream {
+    pub fn format_method_call(&self, args: &[TokenStream]) -> TokenStream {
         let split_name: Vec<Option<Ident>> = self
             .name
             .split(':')
-            .enumerate()
-            .map(|(idx, name)| {
+            .map(|name| {
                 if name.is_empty() {
                     None
-                } else if idx == 0 {
-                    // Try to parse the method name as an identifier. Having a keyword is ok
-                    // unless it is `crate`, `self`, `super` or `Self`, so we try to add the `_`
-                    // suffix to it and parse it.
-                    if ["crate", "self", "super", "Self"].contains(&name) {
-                        Some(Ident::new(
-                            &format!("{}_", name),
-                            Span::call_site(),
-                        ))
-                    } else {
-                        Some(Ident::new(name, Span::call_site()))
-                    }
                 } else {
-                    // Try to parse the current joining name as an identifier. This might fail if the name
-                    // is a keyword, so we try to  "r#" to it and parse again, this could also fail
-                    // if the name is `crate`, `self`, `super` or `Self`, so we try to add the `_`
-                    // suffix to it and parse again. If this also fails, we panic with the first
-                    // error.
+                    // Try to parse the current name as an identifier. This might fail if the
+                    // name is a keyword so we try to prepend "r#" to it and parse again. If
+                    // this also fails, we panic with the first error.
                     Some(
                         syn::parse_str::<Ident>(name)
                             .or_else(|err| {
                                 syn::parse_str::<Ident>(&format!("r#{}", name))
-                                    .map_err(|_| err)
-                            })
-                            .or_else(|err| {
-                                syn::parse_str::<Ident>(&format!("{}_", name))
                                     .map_err(|_| err)
                             })
                             .expect("Invalid identifier"),

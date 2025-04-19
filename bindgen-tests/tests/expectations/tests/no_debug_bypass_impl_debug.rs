@@ -1,8 +1,14 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct Generic<T> {
-    pub _phantom_0: ::std::marker::PhantomData<::std::cell::UnsafeCell<T>>,
     pub t: [T; 40usize],
+    pub _phantom_0: ::std::marker::PhantomData<::std::cell::UnsafeCell<T>>,
 }
 impl<T> Default for Generic<T> {
     fn default() -> Self {
@@ -20,8 +26,8 @@ impl<T> ::std::fmt::Debug for Generic<T> {
 }
 #[repr(C)]
 pub struct NoDebug<T> {
-    pub _phantom_0: ::std::marker::PhantomData<::std::cell::UnsafeCell<T>>,
     pub t: [T; 40usize],
+    pub _phantom_0: ::std::marker::PhantomData<::std::cell::UnsafeCell<T>>,
 }
 impl<T> Default for NoDebug<T> {
     fn default() -> Self {

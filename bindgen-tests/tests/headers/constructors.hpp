@@ -1,6 +1,6 @@
 
 class TestOverload {
-  // This one shouldn't be generated.
+  // This one shouldnt' be generated.
   TestOverload();
 public:
   TestOverload(int);

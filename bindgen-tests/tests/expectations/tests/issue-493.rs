@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct __BindgenUnionField<T>(::std::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
@@ -24,7 +30,7 @@ impl<T> ::std::default::Default for __BindgenUnionField<T> {
 impl<T> ::std::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::std::marker::Copy for __BindgenUnionField<T> {}
@@ -66,7 +72,8 @@ impl Default for basic_string___long {
         }
     }
 }
-pub const basic_string___min_cap: basic_string__bindgen_ty_1 = basic_string__bindgen_ty_1::__min_cap;
+pub const basic_string___min_cap: basic_string__bindgen_ty_1 =
+    basic_string__bindgen_ty_1::__min_cap;
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum basic_string__bindgen_ty_1 {
@@ -116,7 +123,8 @@ impl Default for basic_string___ulx {
         }
     }
 }
-pub const basic_string___n_words: basic_string__bindgen_ty_2 = basic_string__bindgen_ty_2::__n_words;
+pub const basic_string___n_words: basic_string__bindgen_ty_2 =
+    basic_string__bindgen_ty_2::__n_words;
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum basic_string__bindgen_ty_2 {

@@ -60,7 +60,6 @@ Note:If the text contains special characters|please escape them according to the
             <policy name="projectPolicy" desc="">
                 <policyitem type="compatibility" name="InvalidLicense" path="bindgen-cli/Cargo.toml" desc="配置文件不涉及LICENSE"/>
                 <policyitem type="compatibility" name="InvalidLicense" path="bindgen/Cargo.toml" desc="配置文件不涉及LICENSE"/>
-                <policyitem type="compatibility" name="InvalidLicense" path="Cargo.toml" desc="配置文件不涉及LICENSE"/>
             </policy>
         </policylist>
         <filefilterlist>

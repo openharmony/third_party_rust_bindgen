@@ -1,9 +1,10 @@
 extern crate bindgen;
+extern crate cc;
 
 use bindgen::callbacks::{
     DeriveInfo, IntKind, MacroParsingBehavior, ParseCallbacks,
 };
-use bindgen::{Builder, EnumVariation, Formatter};
+use bindgen::{Builder, CargoCallbacks, EnumVariation};
 use std::collections::HashSet;
 use std::env;
 use std::path::PathBuf;
@@ -127,8 +128,6 @@ impl ParseCallbacks for MacroCallback {
             vec!["PartialEq".into()]
         } else if info.name == "MyOrderedEnum" {
             vec!["std::cmp::PartialOrd".into()]
-        } else if info.name == "TestDeriveOnAlias" {
-            vec!["std::cmp::PartialEq".into(), "std::cmp::PartialOrd".into()]
         } else {
             vec![]
         }
@@ -150,15 +149,6 @@ impl Drop for MacroCallback {
     }
 }
 
-#[derive(Debug)]
-struct WrappedVaListCallback;
-
-impl ParseCallbacks for WrappedVaListCallback {
-    fn wrap_as_variadic_fn(&self, name: &str) -> Option<String> {
-        Some(name.to_owned() + "_wrapped")
-    }
-}
-
 fn setup_macro_test() {
     cc::Build::new()
         .cpp(true)
@@ -176,7 +166,7 @@ fn setup_macro_test() {
     let out_dep_file = out_path.join("test.d");
 
     let bindings = Builder::default()
-        .formatter(Formatter::None)
+        .rustfmt_bindings(false)
         .enable_cxx_namespaces()
         .default_enum_style(EnumVariation::Rust {
             non_exhaustive: false,
@@ -194,7 +184,6 @@ fn setup_macro_test() {
         .blocklist_function("my_prefixed_function_to_remove")
         .constified_enum("my_prefixed_enum_to_be_constified")
         .opaque_type("my_prefixed_templated_foo<my_prefixed_baz>")
-        .new_type_alias("TestDeriveOnAlias")
         .depfile(out_rust_file_relative.display().to_string(), &out_dep_file)
         .generate()
         .expect("Unable to generate bindings");
@@ -233,15 +222,11 @@ fn setup_wrap_static_fns_test() {
     // generate external bindings with the external .c and .h files
     let bindings = Builder::default()
         .header(input_header_file_path_str)
-        .parse_callbacks(Box::new(
-            bindgen::CargoCallbacks::new().rerun_on_header_files(true),
-        ))
-        .parse_callbacks(Box::new(WrappedVaListCallback))
+        .parse_callbacks(Box::new(CargoCallbacks))
         .wrap_static_fns(true)
         .wrap_static_fns_path(
             out_path.join("wrap_static_fns").display().to_string(),
         )
-        .clang_arg("-DUSE_VA_HEADER")
         .generate()
         .expect("Unable to generate bindings");
 
@@ -257,7 +242,8 @@ fn setup_wrap_static_fns_test() {
         .arg("-o")
         .arg(&obj_path)
         .arg(out_path.join("wrap_static_fns.c"))
-        .arg("-DUSE_VA_HEADER")
+        .arg("-include")
+        .arg(input_header_file_path)
         .output()
         .expect("`clang` command error");
     if !clang_output.status.success() {
@@ -283,7 +269,7 @@ fn setup_wrap_static_fns_test() {
 
     bindings
         .write_to_file(out_rust_file)
-        .expect("Could not write bindings to the Rust file");
+        .expect("Cound not write bindings to the Rust file");
 }
 
 fn main() {

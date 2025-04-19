@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct __BindgenBitfieldUnit<Storage> {
@@ -49,7 +55,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         let mut val = 0;
         for i in 0..(bit_width as usize) {
@@ -69,7 +76,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         for i in 0..(bit_width as usize) {
             let mask = 1 << i;
@@ -120,12 +128,19 @@ pub struct foo {
     pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub b: __IncompleteArrayField<*mut ::std::os::raw::c_void>,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of foo"][::std::mem::size_of::<foo>() - 8usize];
-    ["Alignment of foo"][::std::mem::align_of::<foo>() - 8usize];
-    ["Offset of field: foo::b"][::std::mem::offset_of!(foo, b) - 8usize];
-};
+#[test]
+fn bindgen_test_layout_foo() {
+    assert_eq!(
+        ::std::mem::size_of::<foo>(),
+        8usize,
+        concat!("Size of: ", stringify!(foo))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<foo>(),
+        8usize,
+        concat!("Alignment of ", stringify!(foo))
+    );
+}
 impl Default for foo {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
@@ -138,7 +153,9 @@ impl Default for foo {
 impl foo {
     #[inline]
     pub fn a(&self) -> ::std::os::raw::c_char {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8)
+        }
     }
     #[inline]
     pub fn set_a(&mut self, val: ::std::os::raw::c_char) {
@@ -151,16 +168,12 @@ impl foo {
     pub fn new_bitfield_1(
         a: ::std::os::raw::c_char,
     ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                1u8,
-                {
-                    let a: u8 = unsafe { ::std::mem::transmute(a) };
-                    a as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let a: u8 = unsafe { ::std::mem::transmute(a) };
+            a as u64
+        });
         __bindgen_bitfield_unit
     }
 }

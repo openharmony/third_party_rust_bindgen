@@ -24,14 +24,13 @@ use std::{cmp, ops};
 ///
 /// We initially assume that all types are `ZeroSized` and then update our
 /// understanding as we learn more about each type.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
-pub(crate) enum SizednessResult {
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SizednessResult {
     /// The type is zero-sized.
     ///
     /// This means that if it is a C++ type, and is not being used as a base
     /// member, then we must add an `_address` byte to enforce the
     /// unique-address-per-distinct-object-instance rule.
-    #[default]
     ZeroSized,
 
     /// Whether this type is zero-sized or not depends on whether a type
@@ -53,7 +52,7 @@ pub(crate) enum SizednessResult {
     /// have an `_address` byte inserted.
     ///
     /// We don't properly handle this situation correctly right now:
-    /// <https://github.com/rust-lang/rust-bindgen/issues/586>
+    /// https://github.com/rust-lang/rust-bindgen/issues/586
     DependsOnTypeParam,
 
     /// Has some size that is known to be greater than zero. That doesn't mean
@@ -63,9 +62,15 @@ pub(crate) enum SizednessResult {
     NonZeroSized,
 }
 
+impl Default for SizednessResult {
+    fn default() -> Self {
+        SizednessResult::ZeroSized
+    }
+}
+
 impl SizednessResult {
     /// Take the least upper bound of `self` and `rhs`.
-    pub(crate) fn join(self, rhs: Self) -> Self {
+    pub fn join(self, rhs: Self) -> Self {
         cmp::max(self, rhs)
     }
 }
@@ -87,17 +92,17 @@ impl ops::BitOrAssign for SizednessResult {
 /// An analysis that computes the sizedness of all types.
 ///
 /// * For types with known sizes -- for example pointers, scalars, etc... --
-///   they are assigned `NonZeroSized`.
+/// they are assigned `NonZeroSized`.
 ///
 /// * For compound structure types with one or more fields, they are assigned
-///   `NonZeroSized`.
+/// `NonZeroSized`.
 ///
 /// * For compound structure types without any fields, the results of the bases
-///   are `join`ed.
+/// are `join`ed.
 ///
 /// * For type parameters, `DependsOnTypeParam` is assigned.
 #[derive(Debug)]
-pub(crate) struct SizednessAnalysis<'ctx> {
+pub struct SizednessAnalysis<'ctx> {
     ctx: &'ctx BindgenContext,
     dependencies: HashMap<TypeId, Vec<TypeId>>,
     // Incremental results of the analysis. Missing entries are implicitly
@@ -341,11 +346,11 @@ impl<'ctx> From<SizednessAnalysis<'ctx>> for HashMap<TypeId, SizednessResult> {
     }
 }
 
-/// A convenience trait for querying whether some type or ID is sized.
+/// A convenience trait for querying whether some type or id is sized.
 ///
 /// This is not for _computing_ whether the thing is sized, it is for looking up
 /// the results of the `Sizedness` analysis's computations for a specific thing.
-pub(crate) trait Sizedness {
+pub trait Sizedness {
     /// Get the sizedness of this type.
     fn sizedness(&self, ctx: &BindgenContext) -> SizednessResult;
 

@@ -1,5 +1,12 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 extern crate core;
+
 #[repr(C)]
 pub struct __BindgenUnionField<T>(::core::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
@@ -25,7 +32,7 @@ impl<T> ::core::default::Default for __BindgenUnionField<T> {
 impl<T> ::core::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::core::marker::Copy for __BindgenUnionField<T> {}
@@ -52,24 +59,33 @@ pub struct foo {
 }
 #[test]
 fn bindgen_test_layout_foo() {
-    const UNINIT: ::core::mem::MaybeUninit<foo> = ::core::mem::MaybeUninit::uninit();
+    const UNINIT: ::core::mem::MaybeUninit<foo> =
+        ::core::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::core::mem::size_of::<foo>(), 16usize, "Size of foo");
-    assert_eq!(::core::mem::align_of::<foo>(), 8usize, "Alignment of foo");
+    assert_eq!(
+        ::core::mem::size_of::<foo>(),
+        16usize,
+        concat!("Size of: ", stringify!(foo))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<foo>(),
+        8usize,
+        concat!("Alignment of ", stringify!(foo))
+    );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).a) as usize - ptr as usize },
         0usize,
-        "Offset of field: foo::a",
+        concat!("Offset of field: ", stringify!(foo), "::", stringify!(a))
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).b) as usize - ptr as usize },
         4usize,
-        "Offset of field: foo::b",
+        concat!("Offset of field: ", stringify!(foo), "::", stringify!(b))
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).bar) as usize - ptr as usize },
         8usize,
-        "Offset of field: foo::bar",
+        concat!("Offset of field: ", stringify!(foo), "::", stringify!(bar))
     );
 }
 impl Clone for foo {
@@ -95,23 +111,38 @@ pub struct _bindgen_ty_1 {
 }
 #[test]
 fn bindgen_test_layout__bindgen_ty_1() {
-    const UNINIT: ::core::mem::MaybeUninit<_bindgen_ty_1> = ::core::mem::MaybeUninit::uninit();
+    const UNINIT: ::core::mem::MaybeUninit<_bindgen_ty_1> =
+        ::core::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::core::mem::size_of::<_bindgen_ty_1>(), 8usize, "Size of _bindgen_ty_1");
+    assert_eq!(
+        ::core::mem::size_of::<_bindgen_ty_1>(),
+        8usize,
+        concat!("Size of: ", stringify!(_bindgen_ty_1))
+    );
     assert_eq!(
         ::core::mem::align_of::<_bindgen_ty_1>(),
         8usize,
-        "Alignment of _bindgen_ty_1",
+        concat!("Alignment of ", stringify!(_bindgen_ty_1))
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).bar) as usize - ptr as usize },
         0usize,
-        "Offset of field: _bindgen_ty_1::bar",
+        concat!(
+            "Offset of field: ",
+            stringify!(_bindgen_ty_1),
+            "::",
+            stringify!(bar)
+        )
     );
     assert_eq!(
         unsafe { ::core::ptr::addr_of!((*ptr).baz) as usize - ptr as usize },
         0usize,
-        "Offset of field: _bindgen_ty_1::baz",
+        concat!(
+            "Offset of field: ",
+            stringify!(_bindgen_ty_1),
+            "::",
+            stringify!(baz)
+        )
     );
 }
 impl Clone for _bindgen_ty_1 {
@@ -122,6 +153,5 @@ impl Clone for _bindgen_ty_1 {
 extern "C" {
     pub static mut bazz: _bindgen_ty_1;
 }
-pub type fooFunction = ::core::option::Option<
-    unsafe extern "C" fn(bar: ::std::os::raw::c_int),
->;
+pub type fooFunction =
+    ::core::option::Option<unsafe extern "C" fn(bar: ::std::os::raw::c_int)>;

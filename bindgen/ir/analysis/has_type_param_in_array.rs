@@ -17,12 +17,12 @@ use crate::{HashMap, HashSet};
 /// * If T is a type alias, a templated alias or an indirection to another type,
 ///   it has type parameter in array if the type T refers to has.
 /// * If T is a compound type, it has array if any of base memter or field
-///   has type parameter in array.
+///   has type paramter in array.
 /// * If T is an instantiation of an abstract template definition, T has
 ///   type parameter in array if any of the template arguments or template definition
 ///   has.
 #[derive(Debug, Clone)]
-pub(crate) struct HasTypeParameterInArray<'ctx> {
+pub struct HasTypeParameterInArray<'ctx> {
     ctx: &'ctx BindgenContext,
 
     // The incremental result of this analysis's computation. Everything in this
