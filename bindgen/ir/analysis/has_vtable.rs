@@ -9,9 +9,10 @@ use std::cmp;
 use std::ops;
 
 /// The result of the `HasVtableAnalysis` for an individual item.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum HasVtableResult {
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub(crate) enum HasVtableResult {
     /// The item does not have a vtable pointer.
+    #[default]
     No,
 
     /// The item has a vtable and the actual vtable pointer is within this item.
@@ -22,15 +23,9 @@ pub enum HasVtableResult {
     BaseHasVtable,
 }
 
-impl Default for HasVtableResult {
-    fn default() -> Self {
-        HasVtableResult::No
-    }
-}
-
 impl HasVtableResult {
     /// Take the least upper bound of `self` and `rhs`.
-    pub fn join(self, rhs: Self) -> Self {
+    pub(crate) fn join(self, rhs: Self) -> Self {
         cmp::max(self, rhs)
     }
 }
@@ -60,7 +55,7 @@ impl ops::BitOrAssign for HasVtableResult {
 /// * If T is an instantiation of an abstract template definition, T has
 ///   vtable if template definition has vtable
 #[derive(Debug, Clone)]
-pub struct HasVtableAnalysis<'ctx> {
+pub(crate) struct HasVtableAnalysis<'ctx> {
     ctx: &'ctx BindgenContext,
 
     // The incremental result of this analysis's computation. Everything in this
@@ -230,7 +225,7 @@ impl<'ctx> From<HasVtableAnalysis<'ctx>> for HashMap<ItemId, HasVtableResult> {
 /// This is not for _computing_ whether the thing has a vtable, it is for
 /// looking up the results of the HasVtableAnalysis's computations for a
 /// specific thing.
-pub trait HasVtable {
+pub(crate) trait HasVtable {
     /// Return `true` if this thing has vtable, `false` otherwise.
     fn has_vtable(&self, ctx: &BindgenContext) -> bool;
 
