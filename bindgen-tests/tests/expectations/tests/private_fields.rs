@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct __BindgenBitfieldUnit<Storage> {
@@ -49,7 +55,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         let mut val = 0;
         for i in 0..(bit_width as usize) {
@@ -69,7 +76,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         for i in 0..(bit_width as usize) {
             let mask = 1 << i;
@@ -89,13 +97,42 @@ pub struct PubPriv {
     pub x: ::std::os::raw::c_int,
     y: ::std::os::raw::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of PubPriv"][::std::mem::size_of::<PubPriv>() - 8usize];
-    ["Alignment of PubPriv"][::std::mem::align_of::<PubPriv>() - 4usize];
-    ["Offset of field: PubPriv::x"][::std::mem::offset_of!(PubPriv, x) - 0usize];
-    ["Offset of field: PubPriv::y"][::std::mem::offset_of!(PubPriv, y) - 4usize];
-};
+#[test]
+fn bindgen_test_layout_PubPriv() {
+    const UNINIT: ::std::mem::MaybeUninit<PubPriv> =
+        ::std::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::std::mem::size_of::<PubPriv>(),
+        8usize,
+        concat!("Size of: ", stringify!(PubPriv))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<PubPriv>(),
+        4usize,
+        concat!("Alignment of ", stringify!(PubPriv))
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).x) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(PubPriv),
+            "::",
+            stringify!(x)
+        )
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).y) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(PubPriv),
+            "::",
+            stringify!(y)
+        )
+    );
+}
 #[repr(C)]
 #[repr(align(4))]
 #[derive(Debug, Default, Copy, Clone)]
@@ -104,17 +141,25 @@ pub struct PrivateBitFields {
     _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub __bindgen_padding_0: [u8; 3usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of PrivateBitFields"][::std::mem::size_of::<PrivateBitFields>() - 4usize];
-    [
-        "Alignment of PrivateBitFields",
-    ][::std::mem::align_of::<PrivateBitFields>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_PrivateBitFields() {
+    assert_eq!(
+        ::std::mem::size_of::<PrivateBitFields>(),
+        4usize,
+        concat!("Size of: ", stringify!(PrivateBitFields))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<PrivateBitFields>(),
+        4usize,
+        concat!("Alignment of ", stringify!(PrivateBitFields))
+    );
+}
 impl PrivateBitFields {
     #[inline]
     fn a(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32)
+        }
     }
     #[inline]
     fn set_a(&mut self, val: ::std::os::raw::c_uint) {
@@ -125,7 +170,9 @@ impl PrivateBitFields {
     }
     #[inline]
     fn b(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32)
+        }
     }
     #[inline]
     fn set_b(&mut self, val: ::std::os::raw::c_uint) {
@@ -139,25 +186,16 @@ impl PrivateBitFields {
         a: ::std::os::raw::c_uint,
         b: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                4u8,
-                {
-                    let a: u32 = unsafe { ::std::mem::transmute(a) };
-                    a as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                4usize,
-                4u8,
-                {
-                    let b: u32 = unsafe { ::std::mem::transmute(b) };
-                    b as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 4u8, {
+            let a: u32 = unsafe { ::std::mem::transmute(a) };
+            a as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 4u8, {
+            let b: u32 = unsafe { ::std::mem::transmute(b) };
+            b as u64
+        });
         __bindgen_bitfield_unit
     }
 }
@@ -169,15 +207,25 @@ pub struct PublicBitFields {
     pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub __bindgen_padding_0: [u8; 3usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of PublicBitFields"][::std::mem::size_of::<PublicBitFields>() - 4usize];
-    ["Alignment of PublicBitFields"][::std::mem::align_of::<PublicBitFields>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_PublicBitFields() {
+    assert_eq!(
+        ::std::mem::size_of::<PublicBitFields>(),
+        4usize,
+        concat!("Size of: ", stringify!(PublicBitFields))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<PublicBitFields>(),
+        4usize,
+        concat!("Alignment of ", stringify!(PublicBitFields))
+    );
+}
 impl PublicBitFields {
     #[inline]
     pub fn a(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32)
+        }
     }
     #[inline]
     pub fn set_a(&mut self, val: ::std::os::raw::c_uint) {
@@ -188,7 +236,9 @@ impl PublicBitFields {
     }
     #[inline]
     pub fn b(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32)
+        }
     }
     #[inline]
     pub fn set_b(&mut self, val: ::std::os::raw::c_uint) {
@@ -202,25 +252,16 @@ impl PublicBitFields {
         a: ::std::os::raw::c_uint,
         b: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                4u8,
-                {
-                    let a: u32 = unsafe { ::std::mem::transmute(a) };
-                    a as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                4usize,
-                4u8,
-                {
-                    let b: u32 = unsafe { ::std::mem::transmute(b) };
-                    b as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 4u8, {
+            let a: u32 = unsafe { ::std::mem::transmute(a) };
+            a as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 4u8, {
+            let b: u32 = unsafe { ::std::mem::transmute(b) };
+            b as u64
+        });
         __bindgen_bitfield_unit
     }
 }
@@ -232,15 +273,25 @@ pub struct MixedBitFields {
     _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub __bindgen_padding_0: [u8; 3usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of MixedBitFields"][::std::mem::size_of::<MixedBitFields>() - 4usize];
-    ["Alignment of MixedBitFields"][::std::mem::align_of::<MixedBitFields>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_MixedBitFields() {
+    assert_eq!(
+        ::std::mem::size_of::<MixedBitFields>(),
+        4usize,
+        concat!("Size of: ", stringify!(MixedBitFields))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<MixedBitFields>(),
+        4usize,
+        concat!("Alignment of ", stringify!(MixedBitFields))
+    );
+}
 impl MixedBitFields {
     #[inline]
     fn a(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32)
+        }
     }
     #[inline]
     fn set_a(&mut self, val: ::std::os::raw::c_uint) {
@@ -251,7 +302,9 @@ impl MixedBitFields {
     }
     #[inline]
     pub fn d(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32) }
+        unsafe {
+            ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32)
+        }
     }
     #[inline]
     pub fn set_d(&mut self, val: ::std::os::raw::c_uint) {
@@ -265,25 +318,16 @@ impl MixedBitFields {
         a: ::std::os::raw::c_uint,
         d: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                4u8,
-                {
-                    let a: u32 = unsafe { ::std::mem::transmute(a) };
-                    a as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                4usize,
-                4u8,
-                {
-                    let d: u32 = unsafe { ::std::mem::transmute(d) };
-                    d as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 4u8, {
+            let a: u32 = unsafe { ::std::mem::transmute(a) };
+            a as u64
+        });
+        __bindgen_bitfield_unit.set(4usize, 4u8, {
+            let d: u32 = unsafe { ::std::mem::transmute(d) };
+            d as u64
+        });
         __bindgen_bitfield_unit
     }
 }
@@ -292,36 +336,68 @@ impl MixedBitFields {
 pub struct Base {
     pub member: ::std::os::raw::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of Base"][::std::mem::size_of::<Base>() - 4usize];
-    ["Alignment of Base"][::std::mem::align_of::<Base>() - 4usize];
-    ["Offset of field: Base::member"][::std::mem::offset_of!(Base, member) - 0usize];
-};
+#[test]
+fn bindgen_test_layout_Base() {
+    const UNINIT: ::std::mem::MaybeUninit<Base> =
+        ::std::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::std::mem::size_of::<Base>(),
+        4usize,
+        concat!("Size of: ", stringify!(Base))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<Base>(),
+        4usize,
+        concat!("Alignment of ", stringify!(Base))
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).member) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(Base),
+            "::",
+            stringify!(member)
+        )
+    );
+}
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct InheritsPrivately {
     _base: Base,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of InheritsPrivately"][::std::mem::size_of::<InheritsPrivately>() - 4usize];
-    [
-        "Alignment of InheritsPrivately",
-    ][::std::mem::align_of::<InheritsPrivately>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_InheritsPrivately() {
+    assert_eq!(
+        ::std::mem::size_of::<InheritsPrivately>(),
+        4usize,
+        concat!("Size of: ", stringify!(InheritsPrivately))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<InheritsPrivately>(),
+        4usize,
+        concat!("Alignment of ", stringify!(InheritsPrivately))
+    );
+}
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct InheritsPublically {
     pub _base: Base,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of InheritsPublically"][::std::mem::size_of::<InheritsPublically>() - 4usize];
-    [
-        "Alignment of InheritsPublically",
-    ][::std::mem::align_of::<InheritsPublically>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_InheritsPublically() {
+    assert_eq!(
+        ::std::mem::size_of::<InheritsPublically>(),
+        4usize,
+        concat!("Size of: ", stringify!(InheritsPublically))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<InheritsPublically>(),
+        4usize,
+        concat!("Alignment of ", stringify!(InheritsPublically))
+    );
+}
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct WithAnonStruct {
@@ -333,40 +409,76 @@ pub struct WithAnonStruct {
 pub struct WithAnonStruct__bindgen_ty_1 {
     pub a: ::std::os::raw::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    [
-        "Size of WithAnonStruct__bindgen_ty_1",
-    ][::std::mem::size_of::<WithAnonStruct__bindgen_ty_1>() - 4usize];
-    [
-        "Alignment of WithAnonStruct__bindgen_ty_1",
-    ][::std::mem::align_of::<WithAnonStruct__bindgen_ty_1>() - 4usize];
-    [
-        "Offset of field: WithAnonStruct__bindgen_ty_1::a",
-    ][::std::mem::offset_of!(WithAnonStruct__bindgen_ty_1, a) - 0usize];
-};
+#[test]
+fn bindgen_test_layout_WithAnonStruct__bindgen_ty_1() {
+    const UNINIT: ::std::mem::MaybeUninit<WithAnonStruct__bindgen_ty_1> =
+        ::std::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::std::mem::size_of::<WithAnonStruct__bindgen_ty_1>(),
+        4usize,
+        concat!("Size of: ", stringify!(WithAnonStruct__bindgen_ty_1))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<WithAnonStruct__bindgen_ty_1>(),
+        4usize,
+        concat!("Alignment of ", stringify!(WithAnonStruct__bindgen_ty_1))
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).a) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(WithAnonStruct__bindgen_ty_1),
+            "::",
+            stringify!(a)
+        )
+    );
+}
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]
 pub struct WithAnonStruct__bindgen_ty_2 {
     pub b: ::std::os::raw::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    [
-        "Size of WithAnonStruct__bindgen_ty_2",
-    ][::std::mem::size_of::<WithAnonStruct__bindgen_ty_2>() - 4usize];
-    [
-        "Alignment of WithAnonStruct__bindgen_ty_2",
-    ][::std::mem::align_of::<WithAnonStruct__bindgen_ty_2>() - 4usize];
-    [
-        "Offset of field: WithAnonStruct__bindgen_ty_2::b",
-    ][::std::mem::offset_of!(WithAnonStruct__bindgen_ty_2, b) - 0usize];
-};
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of WithAnonStruct"][::std::mem::size_of::<WithAnonStruct>() - 8usize];
-    ["Alignment of WithAnonStruct"][::std::mem::align_of::<WithAnonStruct>() - 4usize];
-};
+#[test]
+fn bindgen_test_layout_WithAnonStruct__bindgen_ty_2() {
+    const UNINIT: ::std::mem::MaybeUninit<WithAnonStruct__bindgen_ty_2> =
+        ::std::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::std::mem::size_of::<WithAnonStruct__bindgen_ty_2>(),
+        4usize,
+        concat!("Size of: ", stringify!(WithAnonStruct__bindgen_ty_2))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<WithAnonStruct__bindgen_ty_2>(),
+        4usize,
+        concat!("Alignment of ", stringify!(WithAnonStruct__bindgen_ty_2))
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).b) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(WithAnonStruct__bindgen_ty_2),
+            "::",
+            stringify!(b)
+        )
+    );
+}
+#[test]
+fn bindgen_test_layout_WithAnonStruct() {
+    assert_eq!(
+        ::std::mem::size_of::<WithAnonStruct>(),
+        8usize,
+        concat!("Size of: ", stringify!(WithAnonStruct))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<WithAnonStruct>(),
+        4usize,
+        concat!("Alignment of ", stringify!(WithAnonStruct))
+    );
+}
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct WithAnonUnion {
@@ -377,15 +489,19 @@ pub struct WithAnonUnion {
 pub union WithAnonUnion__bindgen_ty_1 {
     pub _address: u8,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    [
-        "Size of WithAnonUnion__bindgen_ty_1",
-    ][::std::mem::size_of::<WithAnonUnion__bindgen_ty_1>() - 1usize];
-    [
-        "Alignment of WithAnonUnion__bindgen_ty_1",
-    ][::std::mem::align_of::<WithAnonUnion__bindgen_ty_1>() - 1usize];
-};
+#[test]
+fn bindgen_test_layout_WithAnonUnion__bindgen_ty_1() {
+    assert_eq!(
+        ::std::mem::size_of::<WithAnonUnion__bindgen_ty_1>(),
+        1usize,
+        concat!("Size of: ", stringify!(WithAnonUnion__bindgen_ty_1))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<WithAnonUnion__bindgen_ty_1>(),
+        1usize,
+        concat!("Alignment of ", stringify!(WithAnonUnion__bindgen_ty_1))
+    );
+}
 impl Default for WithAnonUnion__bindgen_ty_1 {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
@@ -395,11 +511,19 @@ impl Default for WithAnonUnion__bindgen_ty_1 {
         }
     }
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of WithAnonUnion"][::std::mem::size_of::<WithAnonUnion>() - 1usize];
-    ["Alignment of WithAnonUnion"][::std::mem::align_of::<WithAnonUnion>() - 1usize];
-};
+#[test]
+fn bindgen_test_layout_WithAnonUnion() {
+    assert_eq!(
+        ::std::mem::size_of::<WithAnonUnion>(),
+        1usize,
+        concat!("Size of: ", stringify!(WithAnonUnion))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<WithAnonUnion>(),
+        1usize,
+        concat!("Alignment of ", stringify!(WithAnonUnion))
+    );
+}
 impl Default for WithAnonUnion {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
@@ -407,99 +531,5 @@ impl Default for WithAnonUnion {
             ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
             s.assume_init()
         }
-    }
-}
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone)]
-pub struct Override {
-    pub a: ::std::os::raw::c_uint,
-    /// <div rustbindgen private></div>
-    b: ::std::os::raw::c_uint,
-    private_c: ::std::os::raw::c_uint,
-    pub _bitfield_align_1: [u8; 0],
-    _bitfield_1: __BindgenBitfieldUnit<[u8; 2usize]>,
-    pub __bindgen_padding_0: u16,
-}
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of Override"][::std::mem::size_of::<Override>() - 16usize];
-    ["Alignment of Override"][::std::mem::align_of::<Override>() - 4usize];
-    ["Offset of field: Override::a"][::std::mem::offset_of!(Override, a) - 0usize];
-    ["Offset of field: Override::b"][::std::mem::offset_of!(Override, b) - 4usize];
-    [
-        "Offset of field: Override::private_c",
-    ][::std::mem::offset_of!(Override, private_c) - 8usize];
-};
-impl Override {
-    #[inline]
-    pub fn bf_a(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 4u8) as u32) }
-    }
-    #[inline]
-    pub fn set_bf_a(&mut self, val: ::std::os::raw::c_uint) {
-        unsafe {
-            let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(0usize, 4u8, val as u64)
-        }
-    }
-    #[inline]
-    fn bf_b(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u32) }
-    }
-    #[inline]
-    fn set_bf_b(&mut self, val: ::std::os::raw::c_uint) {
-        unsafe {
-            let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(4usize, 4u8, val as u64)
-        }
-    }
-    #[inline]
-    fn private_bf_c(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 4u8) as u32) }
-    }
-    #[inline]
-    fn set_private_bf_c(&mut self, val: ::std::os::raw::c_uint) {
-        unsafe {
-            let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(8usize, 4u8, val as u64)
-        }
-    }
-    #[inline]
-    fn new_bitfield_1(
-        bf_a: ::std::os::raw::c_uint,
-        bf_b: ::std::os::raw::c_uint,
-        private_bf_c: ::std::os::raw::c_uint,
-    ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                4u8,
-                {
-                    let bf_a: u32 = unsafe { ::std::mem::transmute(bf_a) };
-                    bf_a as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                4usize,
-                4u8,
-                {
-                    let bf_b: u32 = unsafe { ::std::mem::transmute(bf_b) };
-                    bf_b as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                8usize,
-                4u8,
-                {
-                    let private_bf_c: u32 = unsafe {
-                        ::std::mem::transmute(private_bf_c)
-                    };
-                    private_bf_c as u64
-                },
-            );
-        __bindgen_bitfield_unit
     }
 }

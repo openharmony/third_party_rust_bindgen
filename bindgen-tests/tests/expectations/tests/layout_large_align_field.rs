@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 #[derive(Default)]
 pub struct __IncompleteArrayField<T>(::std::marker::PhantomData<T>, [T; 0]);
@@ -59,24 +65,48 @@ pub struct ip_frag {
 }
 #[test]
 fn bindgen_test_layout_ip_frag() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_frag> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_frag> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::std::mem::size_of::<ip_frag>(), 16usize, "Size of ip_frag");
-    assert_eq!(::std::mem::align_of::<ip_frag>(), 8usize, "Alignment of ip_frag");
+    assert_eq!(
+        ::std::mem::size_of::<ip_frag>(),
+        16usize,
+        concat!("Size of: ", stringify!(ip_frag))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<ip_frag>(),
+        8usize,
+        concat!("Alignment of ", stringify!(ip_frag))
+    );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).ofs) as usize - ptr as usize },
         0usize,
-        "Offset of field: ip_frag::ofs",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag),
+            "::",
+            stringify!(ofs)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).len) as usize - ptr as usize },
         2usize,
-        "Offset of field: ip_frag::len",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag),
+            "::",
+            stringify!(len)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).mb) as usize - ptr as usize },
         8usize,
-        "Offset of field: ip_frag::mb",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag),
+            "::",
+            stringify!(mb)
+        )
     );
 }
 impl Default for ip_frag {
@@ -101,32 +131,52 @@ pub struct ip_frag_key {
 }
 #[test]
 fn bindgen_test_layout_ip_frag_key() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_frag_key> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_frag_key> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::std::mem::size_of::<ip_frag_key>(), 40usize, "Size of ip_frag_key");
+    assert_eq!(
+        ::std::mem::size_of::<ip_frag_key>(),
+        40usize,
+        concat!("Size of: ", stringify!(ip_frag_key))
+    );
     assert_eq!(
         ::std::mem::align_of::<ip_frag_key>(),
         8usize,
-        "Alignment of ip_frag_key",
+        concat!("Alignment of ", stringify!(ip_frag_key))
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).src_dst) as usize - ptr as usize },
         0usize,
-        "Offset of field: ip_frag_key::src_dst",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_key),
+            "::",
+            stringify!(src_dst)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).id) as usize - ptr as usize },
         32usize,
-        "Offset of field: ip_frag_key::id",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_key),
+            "::",
+            stringify!(id)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).key_len) as usize - ptr as usize },
         36usize,
-        "Offset of field: ip_frag_key::key_len",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_key),
+            "::",
+            stringify!(key_len)
+        )
     );
 }
-/** @internal Fragmented packet to reassemble.
- First two entries in the frags[] array are for the last and first fragments.*/
+/// @internal Fragmented packet to reassemble.
+/// First two entries in the frags[] array are for the last and first fragments.
 #[repr(C)]
 #[repr(align(64))]
 #[derive(Copy, Clone)]
@@ -154,27 +204,42 @@ pub struct ip_frag_pkt__bindgen_ty_1 {
 }
 #[test]
 fn bindgen_test_layout_ip_frag_pkt__bindgen_ty_1() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_frag_pkt__bindgen_ty_1> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_frag_pkt__bindgen_ty_1> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::std::mem::size_of::<ip_frag_pkt__bindgen_ty_1>(),
         16usize,
-        "Size of ip_frag_pkt__bindgen_ty_1",
+        concat!("Size of: ", stringify!(ip_frag_pkt__bindgen_ty_1))
     );
     assert_eq!(
         ::std::mem::align_of::<ip_frag_pkt__bindgen_ty_1>(),
         8usize,
-        "Alignment of ip_frag_pkt__bindgen_ty_1",
+        concat!("Alignment of ", stringify!(ip_frag_pkt__bindgen_ty_1))
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).tqe_next) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).tqe_next) as usize - ptr as usize
+        },
         0usize,
-        "Offset of field: ip_frag_pkt__bindgen_ty_1::tqe_next",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt__bindgen_ty_1),
+            "::",
+            stringify!(tqe_next)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).tqe_prev) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).tqe_prev) as usize - ptr as usize
+        },
         8usize,
-        "Offset of field: ip_frag_pkt__bindgen_ty_1::tqe_prev",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt__bindgen_ty_1),
+            "::",
+            stringify!(tqe_prev)
+        )
     );
 }
 impl Default for ip_frag_pkt__bindgen_ty_1 {
@@ -188,48 +253,94 @@ impl Default for ip_frag_pkt__bindgen_ty_1 {
 }
 #[test]
 fn bindgen_test_layout_ip_frag_pkt() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_frag_pkt> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_frag_pkt> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::std::mem::size_of::<ip_frag_pkt>(), 192usize, "Size of ip_frag_pkt");
+    assert_eq!(
+        ::std::mem::size_of::<ip_frag_pkt>(),
+        192usize,
+        concat!("Size of: ", stringify!(ip_frag_pkt))
+    );
     assert_eq!(
         ::std::mem::align_of::<ip_frag_pkt>(),
         64usize,
-        "Alignment of ip_frag_pkt",
+        concat!("Alignment of ", stringify!(ip_frag_pkt))
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).lru) as usize - ptr as usize },
         0usize,
-        "Offset of field: ip_frag_pkt::lru",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(lru)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).key) as usize - ptr as usize },
         16usize,
-        "Offset of field: ip_frag_pkt::key",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(key)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).start) as usize - ptr as usize },
         56usize,
-        "Offset of field: ip_frag_pkt::start",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(start)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).total_size) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).total_size) as usize - ptr as usize
+        },
         64usize,
-        "Offset of field: ip_frag_pkt::total_size",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(total_size)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).frag_size) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).frag_size) as usize - ptr as usize
+        },
         68usize,
-        "Offset of field: ip_frag_pkt::frag_size",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(frag_size)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).last_idx) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).last_idx) as usize - ptr as usize
+        },
         72usize,
-        "Offset of field: ip_frag_pkt::last_idx",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(last_idx)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).frags) as usize - ptr as usize },
         80usize,
-        "Offset of field: ip_frag_pkt::frags",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_pkt),
+            "::",
+            stringify!(frags)
+        )
     );
 }
 impl Default for ip_frag_pkt {
@@ -249,23 +360,42 @@ pub struct ip_pkt_list {
 }
 #[test]
 fn bindgen_test_layout_ip_pkt_list() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_pkt_list> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_pkt_list> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::std::mem::size_of::<ip_pkt_list>(), 16usize, "Size of ip_pkt_list");
+    assert_eq!(
+        ::std::mem::size_of::<ip_pkt_list>(),
+        16usize,
+        concat!("Size of: ", stringify!(ip_pkt_list))
+    );
     assert_eq!(
         ::std::mem::align_of::<ip_pkt_list>(),
         8usize,
-        "Alignment of ip_pkt_list",
+        concat!("Alignment of ", stringify!(ip_pkt_list))
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).tqh_first) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).tqh_first) as usize - ptr as usize
+        },
         0usize,
-        "Offset of field: ip_pkt_list::tqh_first",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_pkt_list),
+            "::",
+            stringify!(tqh_first)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).tqh_last) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).tqh_last) as usize - ptr as usize
+        },
         8usize,
-        "Offset of field: ip_pkt_list::tqh_last",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_pkt_list),
+            "::",
+            stringify!(tqh_last)
+        )
     );
 }
 impl Default for ip_pkt_list {
@@ -297,47 +427,86 @@ pub struct ip_frag_tbl_stat {
 }
 #[test]
 fn bindgen_test_layout_ip_frag_tbl_stat() {
-    const UNINIT: ::std::mem::MaybeUninit<ip_frag_tbl_stat> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ip_frag_tbl_stat> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::std::mem::size_of::<ip_frag_tbl_stat>(),
         64usize,
-        "Size of ip_frag_tbl_stat",
+        concat!("Size of: ", stringify!(ip_frag_tbl_stat))
     );
     assert_eq!(
         ::std::mem::align_of::<ip_frag_tbl_stat>(),
         64usize,
-        "Alignment of ip_frag_tbl_stat",
+        concat!("Alignment of ", stringify!(ip_frag_tbl_stat))
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).find_num) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).find_num) as usize - ptr as usize
+        },
         0usize,
-        "Offset of field: ip_frag_tbl_stat::find_num",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(find_num)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).add_num) as usize - ptr as usize },
         8usize,
-        "Offset of field: ip_frag_tbl_stat::add_num",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(add_num)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).del_num) as usize - ptr as usize },
         16usize,
-        "Offset of field: ip_frag_tbl_stat::del_num",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(del_num)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).reuse_num) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).reuse_num) as usize - ptr as usize
+        },
         24usize,
-        "Offset of field: ip_frag_tbl_stat::reuse_num",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(reuse_num)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).fail_total) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).fail_total) as usize - ptr as usize
+        },
         32usize,
-        "Offset of field: ip_frag_tbl_stat::fail_total",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(fail_total)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).fail_nospace) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).fail_nospace) as usize - ptr as usize
+        },
         40usize,
-        "Offset of field: ip_frag_tbl_stat::fail_nospace",
+        concat!(
+            "Offset of field: ",
+            stringify!(ip_frag_tbl_stat),
+            "::",
+            stringify!(fail_nospace)
+        )
     );
 }
 impl Default for ip_frag_tbl_stat {
@@ -379,72 +548,142 @@ pub struct rte_ip_frag_tbl {
 }
 #[test]
 fn bindgen_test_layout_rte_ip_frag_tbl() {
-    const UNINIT: ::std::mem::MaybeUninit<rte_ip_frag_tbl> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<rte_ip_frag_tbl> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::std::mem::size_of::<rte_ip_frag_tbl>(),
         128usize,
-        "Size of rte_ip_frag_tbl",
+        concat!("Size of: ", stringify!(rte_ip_frag_tbl))
     );
     assert_eq!(
         ::std::mem::align_of::<rte_ip_frag_tbl>(),
         64usize,
-        "Alignment of rte_ip_frag_tbl",
+        concat!("Alignment of ", stringify!(rte_ip_frag_tbl))
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).max_cycles) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).max_cycles) as usize - ptr as usize
+        },
         0usize,
-        "Offset of field: rte_ip_frag_tbl::max_cycles",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(max_cycles)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).entry_mask) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).entry_mask) as usize - ptr as usize
+        },
         8usize,
-        "Offset of field: rte_ip_frag_tbl::entry_mask",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(entry_mask)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).max_entries) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).max_entries) as usize - ptr as usize
+        },
         12usize,
-        "Offset of field: rte_ip_frag_tbl::max_entries",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(max_entries)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).use_entries) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).use_entries) as usize - ptr as usize
+        },
         16usize,
-        "Offset of field: rte_ip_frag_tbl::use_entries",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(use_entries)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).bucket_entries) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).bucket_entries) as usize - ptr as usize
+        },
         20usize,
-        "Offset of field: rte_ip_frag_tbl::bucket_entries",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(bucket_entries)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).nb_entries) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).nb_entries) as usize - ptr as usize
+        },
         24usize,
-        "Offset of field: rte_ip_frag_tbl::nb_entries",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(nb_entries)
+        )
     );
     assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).nb_buckets) as usize - ptr as usize },
+        unsafe {
+            ::std::ptr::addr_of!((*ptr).nb_buckets) as usize - ptr as usize
+        },
         28usize,
-        "Offset of field: rte_ip_frag_tbl::nb_buckets",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(nb_buckets)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).last) as usize - ptr as usize },
         32usize,
-        "Offset of field: rte_ip_frag_tbl::last",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(last)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).lru) as usize - ptr as usize },
         40usize,
-        "Offset of field: rte_ip_frag_tbl::lru",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(lru)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).stat) as usize - ptr as usize },
         64usize,
-        "Offset of field: rte_ip_frag_tbl::stat",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(stat)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).pkt) as usize - ptr as usize },
         128usize,
-        "Offset of field: rte_ip_frag_tbl::pkt",
+        concat!(
+            "Offset of field: ",
+            stringify!(rte_ip_frag_tbl),
+            "::",
+            stringify!(pkt)
+        )
     );
 }
 impl Default for rte_ip_frag_tbl {

@@ -1,11 +1,16 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct Foo {
-    pub member: *mut Foo_SecondAlias,
+    pub member: Foo_SecondAlias,
 }
 pub type Foo_FirstAlias = [u8; 0usize];
-pub type Foo_SecondAlias = Foo;
+pub type Foo_SecondAlias = [u8; 0usize];
 impl Default for Foo {
     fn default() -> Self {
         let mut s = ::std::mem::MaybeUninit::<Self>::uninit();

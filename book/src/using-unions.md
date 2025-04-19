@@ -66,11 +66,11 @@ When using the `union` builtin type, there are two choices for initialization:
 mod bindings_builtin_union;
 
 fn union_builtin() {
-    // Initialize the union to zero
+    // Initalize the union to zero
     let x = bindings_builtin_union::greek_t::default();
 
     // If `--with-derive-default` option is not used, the following may be used
-    //   to initialize the union to zero:
+    //   to initalize the union to zero:
     let x = unsafe { std::mem::zeroed::<bindings_builtin_union::greek_t>() };
 
     // Or, it is possible to initialize exactly one variant of the enum:

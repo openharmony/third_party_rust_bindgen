@@ -19,30 +19,28 @@ use super::module::{Module, ModuleKind};
 use super::template::{TemplateInstantiation, TemplateParameters};
 use super::traversal::{self, Edge, ItemTraversal};
 use super::ty::{FloatKind, Type, TypeKind};
-use crate::clang::{self, ABIKind, Cursor};
+use crate::clang::{self, Cursor};
 use crate::codegen::CodegenError;
 use crate::BindgenOptions;
 use crate::{Entry, HashMap, HashSet};
-
+use cexpr;
+use clang_sys;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeSet, HashMap as StdHashMap};
-use std::fs::OpenOptions;
-use std::io::Write;
+use std::iter::IntoIterator;
 use std::mem;
-use std::path::Path;
 
 /// An identifier for some kind of IR item.
 #[derive(Debug, Copy, Clone, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct ItemId(usize);
+pub struct ItemId(usize);
 
-/// Declare a newtype around `ItemId` with conversion methods.
 macro_rules! item_id_newtype {
     (
         $( #[$attr:meta] )*
-        pub(crate) struct $name:ident(ItemId)
+        pub struct $name:ident(ItemId)
         where
             $( #[$checked_attr:meta] )*
             checked = $checked:ident with $check_method:ident,
@@ -53,12 +51,11 @@ macro_rules! item_id_newtype {
     ) => {
         $( #[$attr] )*
         #[derive(Debug, Copy, Clone, Eq, PartialOrd, Ord, Hash)]
-        pub(crate) struct $name(ItemId);
+        pub struct $name(ItemId);
 
         impl $name {
-            /// Create an `ItemResolver` from this ID.
-            #[allow(dead_code)]
-            pub(crate) fn into_resolver(self) -> ItemResolver {
+            /// Create an `ItemResolver` from this id.
+            pub fn into_resolver(self) -> ItemResolver {
                 let id: ItemId = self.into();
                 id.into()
             }
@@ -86,10 +83,9 @@ macro_rules! item_id_newtype {
             }
         }
 
-        #[allow(dead_code)]
         impl ItemId {
             $( #[$checked_attr] )*
-            pub(crate) fn $checked(&self, ctx: &BindgenContext) -> Option<$name> {
+            pub fn $checked(&self, ctx: &BindgenContext) -> Option<$name> {
                 if ctx.resolve_item(*self).kind().$check_method() {
                     Some($name(*self))
                 } else {
@@ -98,7 +94,7 @@ macro_rules! item_id_newtype {
             }
 
             $( #[$expected_attr] )*
-            pub(crate) fn $expected(&self, ctx: &BindgenContext) -> $name {
+            pub fn $expected(&self, ctx: &BindgenContext) -> $name {
                 self.$checked(ctx)
                     .expect(concat!(
                         stringify!($expected),
@@ -107,7 +103,7 @@ macro_rules! item_id_newtype {
             }
 
             $( #[$unchecked_attr] )*
-            pub(crate) fn $unchecked(&self) -> $name {
+            pub fn $unchecked(&self) -> $name {
                 $name(*self)
             }
         }
@@ -117,7 +113,7 @@ macro_rules! item_id_newtype {
 item_id_newtype! {
     /// An identifier for an `Item` whose `ItemKind` is known to be
     /// `ItemKind::Type`.
-    pub(crate) struct TypeId(ItemId)
+    pub struct TypeId(ItemId)
     where
         /// Convert this `ItemId` into a `TypeId` if its associated item is a type,
         /// otherwise return `None`.
@@ -129,14 +125,14 @@ item_id_newtype! {
         expected = expect_type_id,
 
         /// Convert this `ItemId` into a `TypeId` without actually checking whether
-        /// this ID actually points to a `Type`.
+        /// this id actually points to a `Type`.
         unchecked = as_type_id_unchecked;
 }
 
 item_id_newtype! {
     /// An identifier for an `Item` whose `ItemKind` is known to be
     /// `ItemKind::Module`.
-    pub(crate) struct ModuleId(ItemId)
+    pub struct ModuleId(ItemId)
     where
         /// Convert this `ItemId` into a `ModuleId` if its associated item is a
         /// module, otherwise return `None`.
@@ -148,14 +144,14 @@ item_id_newtype! {
         expected = expect_module_id,
 
         /// Convert this `ItemId` into a `ModuleId` without actually checking
-        /// whether this ID actually points to a `Module`.
+        /// whether this id actually points to a `Module`.
         unchecked = as_module_id_unchecked;
 }
 
 item_id_newtype! {
     /// An identifier for an `Item` whose `ItemKind` is known to be
     /// `ItemKind::Var`.
-    pub(crate) struct VarId(ItemId)
+    pub struct VarId(ItemId)
     where
         /// Convert this `ItemId` into a `VarId` if its associated item is a var,
         /// otherwise return `None`.
@@ -167,14 +163,14 @@ item_id_newtype! {
         expected = expect_var_id,
 
         /// Convert this `ItemId` into a `VarId` without actually checking whether
-        /// this ID actually points to a `Var`.
+        /// this id actually points to a `Var`.
         unchecked = as_var_id_unchecked;
 }
 
 item_id_newtype! {
     /// An identifier for an `Item` whose `ItemKind` is known to be
     /// `ItemKind::Function`.
-    pub(crate) struct FunctionId(ItemId)
+    pub struct FunctionId(ItemId)
     where
         /// Convert this `ItemId` into a `FunctionId` if its associated item is a function,
         /// otherwise return `None`.
@@ -186,7 +182,7 @@ item_id_newtype! {
         expected = expect_function_id,
 
         /// Convert this `ItemId` into a `FunctionId` without actually checking whether
-        /// this ID actually points to a `Function`.
+        /// this id actually points to a `Function`.
         unchecked = as_function_id_unchecked;
 }
 
@@ -197,8 +193,8 @@ impl From<ItemId> for usize {
 }
 
 impl ItemId {
-    /// Get a numeric representation of this ID.
-    pub(crate) fn as_usize(&self) -> usize {
+    /// Get a numeric representation of this id.
+    pub fn as_usize(&self) -> usize {
         (*self).into()
     }
 }
@@ -309,7 +305,7 @@ enum TypeKey {
 
 /// A context used during parsing and generation of structs.
 #[derive(Debug)]
-pub(crate) struct BindgenContext {
+pub struct BindgenContext {
     /// The map of all the items parsed so far, keyed off ItemId.
     items: Vec<Option<Item>>,
 
@@ -317,7 +313,7 @@ pub(crate) struct BindgenContext {
     /// item ids during parsing.
     types: HashMap<TypeKey, TypeId>,
 
-    /// Maps from a cursor to the item ID of the named template type parameter
+    /// Maps from a cursor to the item id of the named template type parameter
     /// for that cursor.
     type_params: HashMap<clang::Cursor, TypeId>,
 
@@ -330,7 +326,7 @@ pub(crate) struct BindgenContext {
     /// Current module being traversed.
     current_module: ModuleId,
 
-    /// A HashMap keyed on a type definition, and whose value is the parent ID
+    /// A HashMap keyed on a type definition, and whose value is the parent id
     /// of the declaration.
     ///
     /// This is used to handle the cases where the semantic and the lexical
@@ -358,16 +354,8 @@ pub(crate) struct BindgenContext {
     /// This needs to be an std::HashMap because the cexpr API requires it.
     parsed_macros: StdHashMap<Vec<u8>, cexpr::expr::EvalResult>,
 
-    /// A map with all include locations.
-    ///
-    /// This is needed so that items are created in the order they are defined in.
-    ///
-    /// The key is the included file, the value is a pair of the source file and
-    /// the position of the `#include` directive in the source file.
-    includes: StdHashMap<String, (String, usize)>,
-
     /// A set of all the included filenames.
-    deps: BTreeSet<Box<str>>,
+    deps: BTreeSet<String>,
 
     /// The active replacements collected from replaces="xxx" annotations.
     replacements: HashMap<Vec<String>, ItemId>,
@@ -379,9 +367,6 @@ pub(crate) struct BindgenContext {
     /// The translation unit for parsing.
     translation_unit: clang::TranslationUnit,
 
-    /// The translation unit for macro fallback parsing.
-    fallback_tu: Option<clang::FallbackTranslationUnit>,
-
     /// Target information that can be useful for some stuff.
     target_info: clang::TargetInfo,
 
@@ -390,9 +375,6 @@ pub(crate) struct BindgenContext {
 
     /// Whether a bindgen complex was generated
     generated_bindgen_complex: Cell<bool>,
-
-    /// Whether a bindgen float16 was generated
-    generated_bindgen_float16: Cell<bool>,
 
     /// The set of `ItemId`s that are allowlisted. This the very first thing
     /// computed after parsing our IR, and before running any of our analyses.
@@ -408,7 +390,7 @@ pub(crate) struct BindgenContext {
     /// It's computed right after computing the allowlisted items.
     codegen_items: Option<ItemSet>,
 
-    /// Map from an item's ID to the set of template parameter items that it
+    /// Map from an item's id to the set of template parameter items that it
     /// uses. See `ir::named` for more details. Always `Some` during the codegen
     /// phase.
     used_template_parameters: Option<HashMap<ItemId, ItemSet>>,
@@ -493,6 +475,9 @@ pub(crate) struct BindgenContext {
     /// Populated when we enter codegen by `compute_has_float`; always `None`
     /// before that and `Some` after.
     has_float: Option<HashSet<ItemId>>,
+
+    /// The set of warnings raised during binding generation.
+    warnings: Vec<String>,
 }
 
 /// A traversal of allowlisted items.
@@ -519,7 +504,7 @@ impl<'ctx> Iterator for AllowlistedItemsTraversal<'ctx> {
 
 impl<'ctx> AllowlistedItemsTraversal<'ctx> {
     /// Construct a new allowlisted items traversal.
-    pub(crate) fn new<R>(
+    pub fn new<R>(
         ctx: &'ctx BindgenContext,
         roots: R,
         predicate: for<'a> fn(&'a BindgenContext, Edge) -> bool,
@@ -576,7 +561,6 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
         BindgenContext {
             items: vec![Some(root_module)],
-            includes: Default::default(),
             deps,
             types: Default::default(),
             type_params: Default::default(),
@@ -590,11 +574,9 @@ If you encounter an error missing from this list, please file an issue or a PR!"
             collected_typerefs: false,
             in_codegen: false,
             translation_unit,
-            fallback_tu: None,
             target_info,
             options,
             generated_bindgen_complex: Cell::new(false),
-            generated_bindgen_float16: Cell::new(false),
             allowlisted: None,
             blocklisted_types_implement_traits: Default::default(),
             codegen_items: None,
@@ -611,80 +593,59 @@ If you encounter an error missing from this list, please file an issue or a PR!"
             have_destructor: None,
             has_type_param_in_array: None,
             has_float: None,
+            warnings: Vec::new(),
         }
     }
 
     /// Returns `true` if the target architecture is wasm32
-    pub(crate) fn is_target_wasm32(&self) -> bool {
+    pub fn is_target_wasm32(&self) -> bool {
         self.target_info.triple.starts_with("wasm32-")
     }
 
     /// Creates a timer for the current bindgen phase. If time_phases is `true`,
     /// the timer will print to stderr when it is dropped, otherwise it will do
     /// nothing.
-    pub(crate) fn timer<'a>(&self, name: &'a str) -> Timer<'a> {
+    pub fn timer<'a>(&self, name: &'a str) -> Timer<'a> {
         Timer::new(name).with_output(self.options.time_phases)
     }
 
     /// Returns the pointer width to use for the target for the current
     /// translation.
-    pub(crate) fn target_pointer_size(&self) -> usize {
+    pub fn target_pointer_size(&self) -> usize {
         self.target_info.pointer_width / 8
-    }
-
-    /// Returns the ABI, which is mostly useful for determining the mangling kind.
-    pub(crate) fn abi_kind(&self) -> ABIKind {
-        self.target_info.abi
     }
 
     /// Get the stack of partially parsed types that we are in the middle of
     /// parsing.
-    pub(crate) fn currently_parsed_types(&self) -> &[PartialType] {
+    pub fn currently_parsed_types(&self) -> &[PartialType] {
         &self.currently_parsed_types[..]
     }
 
     /// Begin parsing the given partial type, and push it onto the
     /// `currently_parsed_types` stack so that we won't infinite recurse if we
     /// run into a reference to it while parsing it.
-    pub(crate) fn begin_parsing(&mut self, partial_ty: PartialType) {
+    pub fn begin_parsing(&mut self, partial_ty: PartialType) {
         self.currently_parsed_types.push(partial_ty);
     }
 
     /// Finish parsing the current partial type, pop it off the
     /// `currently_parsed_types` stack, and return it.
-    pub(crate) fn finish_parsing(&mut self) -> PartialType {
+    pub fn finish_parsing(&mut self) -> PartialType {
         self.currently_parsed_types.pop().expect(
             "should have been parsing a type, if we finished parsing a type",
         )
     }
 
-    /// Add the location of the `#include` directive for the `included_file`.
-    pub(crate) fn add_include(
-        &mut self,
-        source_file: String,
-        included_file: String,
-        offset: usize,
-    ) {
-        self.includes
-            .entry(included_file)
-            .or_insert((source_file, offset));
-    }
-
-    /// Get the location of the first `#include` directive for the `included_file`.
-    pub(crate) fn included_file_location(
-        &self,
-        included_file: &str,
-    ) -> Option<(String, usize)> {
-        self.includes.get(included_file).cloned()
-    }
-
-    /// Add an included file.
-    pub(crate) fn add_dep(&mut self, dep: Box<str>) {
-        self.deps.insert(dep);
+    /// Add another path to the set of included files.
+    pub fn include_file(&mut self, filename: String) {
+        for cb in &self.options().parse_callbacks {
+            cb.include_file(&filename);
+        }
+        self.deps.insert(filename);
     }
 
     /// Get any included files.
-    pub(crate) fn deps(&self) -> &BTreeSet<Box<str>> {
+    pub fn deps(&self) -> &BTreeSet<String> {
         &self.deps
     }
 
@@ -692,7 +653,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     ///
     /// This inserts it into the internal items set, and its type into the
     /// internal types set.
-    pub(crate) fn add_item(
+    pub fn add_item(
         &mut self,
         item: Item,
         declaration: Option<Cursor>,
@@ -817,11 +778,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Add a new named template type parameter to this context's item set.
-    pub(crate) fn add_type_param(
-        &mut self,
-        item: Item,
-        definition: clang::Cursor,
-    ) {
+    pub fn add_type_param(&mut self, item: Item, definition: clang::Cursor) {
         debug!(
             "BindgenContext::add_type_param: item = {:?}; definition = {:?}",
             item, definition
@@ -856,10 +813,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Get the named type defined at the given cursor location, if we've
     /// already added one.
-    pub(crate) fn get_type_param(
-        &self,
-        definition: &clang::Cursor,
-    ) -> Option<TypeId> {
+    pub fn get_type_param(&self, definition: &clang::Cursor) -> Option<TypeId> {
         assert_eq!(
             definition.kind(),
             clang_sys::CXCursor_TemplateTypeParameter
@@ -871,7 +825,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Mangles a name so it doesn't conflict with any keyword.
     #[rustfmt::skip]
-    pub(crate) fn rust_mangle<'a>(&self, name: &'a str) -> Cow<'a, str> {
+    pub fn rust_mangle<'a>(&self, name: &'a str) -> Cow<'a, str> {
         if name.contains('@') ||
             name.contains('?') ||
             name.contains('$') ||
@@ -902,7 +856,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Returns a mangled name as a rust identifier.
-    pub(crate) fn rust_ident<S>(&self, name: S) -> Ident
+    pub fn rust_ident<S>(&self, name: S) -> Ident
     where
         S: AsRef<str>,
     {
@@ -910,7 +864,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Returns a mangled name as a rust identifier.
-    pub(crate) fn rust_ident_raw<T>(&self, name: T) -> Ident
+    pub fn rust_ident_raw<T>(&self, name: T) -> Ident
     where
         T: AsRef<str>,
     {
@@ -918,7 +872,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Iterate over all items that have been defined.
-    pub(crate) fn items(&self) -> impl Iterator<Item = (ItemId, &Item)> {
+    pub fn items(&self) -> impl Iterator<Item = (ItemId, &Item)> {
         self.items.iter().enumerate().filter_map(|(index, item)| {
             let item = item.as_ref()?;
             Some((ItemId(index), item))
@@ -926,7 +880,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Have we collected all unresolved type references yet?
-    pub(crate) fn collected_typerefs(&self) -> bool {
+    pub fn collected_typerefs(&self) -> bool {
         self.collected_typerefs
     }
 
@@ -1123,7 +1077,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
             // Relocate the replacement item from where it was declared, to
             // where the thing it is replacing was declared.
             //
-            // First, we'll make sure that its parent ID is correct.
+            // First, we'll make sure that its parent id is correct.
 
             let old_parent = self.resolve_item(replacement_id).parent_id();
             if new_parent == old_parent {
@@ -1193,7 +1147,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     pub(crate) fn gen<F, Out>(
         mut self,
         cb: F,
-    ) -> Result<(Out, BindgenOptions), CodegenError>
+    ) -> Result<(Out, BindgenOptions, Vec<String>), CodegenError>
     where
         F: FnOnce(&Self) -> Result<Out, CodegenError>,
     {
@@ -1231,14 +1185,14 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         self.compute_cannot_derive_partialord_partialeq_or_eq();
 
         let ret = cb(&self)?;
-        Ok((ret, self.options))
+        Ok((ret, self.options, self.warnings))
     }
 
-    /// When the `__testing_only_extra_assertions` feature is enabled, this
+    /// When the `testing_only_extra_assertions` feature is enabled, this
     /// function walks the IR graph and asserts that we do not have any edges
     /// referencing an ItemId for which we do not have an associated IR item.
     fn assert_no_dangling_references(&self) {
-        if cfg!(feature = "__testing_only_extra_assertions") {
+        if cfg!(feature = "testing_only_extra_assertions") {
             for _ in self.assert_no_dangling_item_traversal() {
                 // The iterator's next method does the asserting for us.
             }
@@ -1259,11 +1213,11 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         )
     }
 
-    /// When the `__testing_only_extra_assertions` feature is enabled, walk over
+    /// When the `testing_only_extra_assertions` feature is enabled, walk over
     /// every item and ensure that it is in the children set of one of its
     /// module ancestors.
     fn assert_every_item_in_a_module(&self) {
-        if cfg!(feature = "__testing_only_extra_assertions") {
+        if cfg!(feature = "testing_only_extra_assertions") {
             assert!(self.in_codegen_phase());
             assert!(self.current_module == self.root_module);
 
@@ -1309,8 +1263,8 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         self.sizedness = Some(analyze::<SizednessAnalysis>(self));
     }
 
-    /// Look up whether the type with the given ID is sized or not.
-    pub(crate) fn lookup_sizedness(&self, id: TypeId) -> SizednessResult {
+    /// Look up whether the type with the given id is sized or not.
+    pub fn lookup_sizedness(&self, id: TypeId) -> SizednessResult {
         assert!(
             self.in_codegen_phase(),
             "We only compute sizedness after we've entered codegen"
@@ -1332,7 +1286,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` has vtable or not.
-    pub(crate) fn lookup_has_vtable(&self, id: TypeId) -> HasVtableResult {
+    pub fn lookup_has_vtable(&self, id: TypeId) -> HasVtableResult {
         assert!(
             self.in_codegen_phase(),
             "We only compute vtables when we enter codegen"
@@ -1356,7 +1310,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` has a destructor.
-    pub(crate) fn lookup_has_destructor(&self, id: TypeId) -> bool {
+    pub fn lookup_has_destructor(&self, id: TypeId) -> bool {
         assert!(
             self.in_codegen_phase(),
             "We only compute destructors when we enter codegen"
@@ -1400,7 +1354,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     /// manually provide a definition for them. To give them the most
     /// flexibility when doing that, we assume that they use every template
     /// parameter and always pass template arguments through in instantiations.
-    pub(crate) fn uses_template_parameter(
+    pub fn uses_template_parameter(
         &self,
         item: ItemId,
         template_param: TypeId,
@@ -1432,7 +1386,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     /// `false` otherwise.
     ///
     /// Has the same restrictions that `uses_template_parameter` has.
-    pub(crate) fn uses_any_template_parameters(&self, item: ItemId) -> bool {
+    pub fn uses_any_template_parameters(&self, item: ItemId) -> bool {
         assert!(
             self.in_codegen_phase(),
             "We only compute template parameter usage as we enter codegen"
@@ -1470,38 +1424,38 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Get the root module.
-    pub(crate) fn root_module(&self) -> ModuleId {
+    pub fn root_module(&self) -> ModuleId {
         self.root_module
     }
 
-    /// Resolve a type with the given ID.
+    /// Resolve a type with the given id.
     ///
     /// Panics if there is no item for the given `TypeId` or if the resolved
     /// item is not a `Type`.
-    pub(crate) fn resolve_type(&self, type_id: TypeId) -> &Type {
+    pub fn resolve_type(&self, type_id: TypeId) -> &Type {
         self.resolve_item(type_id).kind().expect_type()
     }
 
-    /// Resolve a function with the given ID.
+    /// Resolve a function with the given id.
     ///
     /// Panics if there is no item for the given `FunctionId` or if the resolved
     /// item is not a `Function`.
-    pub(crate) fn resolve_func(&self, func_id: FunctionId) -> &Function {
+    pub fn resolve_func(&self, func_id: FunctionId) -> &Function {
         self.resolve_item(func_id).kind().expect_function()
     }
 
     /// Resolve the given `ItemId` as a type, or `None` if there is no item with
-    /// the given ID.
+    /// the given id.
     ///
-    /// Panics if the ID resolves to an item that is not a type.
-    pub(crate) fn safe_resolve_type(&self, type_id: TypeId) -> Option<&Type> {
+    /// Panics if the id resolves to an item that is not a type.
+    pub fn safe_resolve_type(&self, type_id: TypeId) -> Option<&Type> {
         self.resolve_item_fallible(type_id)
             .map(|t| t.kind().expect_type())
     }
 
     /// Resolve the given `ItemId` into an `Item`, or `None` if no such item
     /// exists.
-    pub(crate) fn resolve_item_fallible<Id: Into<ItemId>>(
+    pub fn resolve_item_fallible<Id: Into<ItemId>>(
         &self,
         id: Id,
     ) -> Option<&Item> {
@@ -1510,8 +1464,8 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Resolve the given `ItemId` into an `Item`.
     ///
-    /// Panics if the given ID does not resolve to any item.
-    pub(crate) fn resolve_item<Id: Into<ItemId>>(&self, item_id: Id) -> &Item {
+    /// Panics if the given id does not resolve to any item.
+    pub fn resolve_item<Id: Into<ItemId>>(&self, item_id: Id) -> &Item {
         let item_id = item_id.into();
         match self.resolve_item_fallible(item_id) {
             Some(item) => item,
@@ -1520,7 +1474,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Get the current module.
-    pub(crate) fn current_module(&self) -> ModuleId {
+    pub fn current_module(&self) -> ModuleId {
         self.current_module
     }
 
@@ -1532,7 +1486,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     /// TODO(emilio): We could consider doing this only when
     /// declaration.lexical_parent() != definition.lexical_parent(), but it's
     /// not sure it's worth it.
-    pub(crate) fn add_semantic_parent(
+    pub fn add_semantic_parent(
         &mut self,
         definition: clang::Cursor,
         parent_id: ItemId,
@@ -1541,7 +1495,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Returns a known semantic parent for a given definition.
-    pub(crate) fn known_semantic_parent(
+    pub fn known_semantic_parent(
         &self,
         definition: clang::Cursor,
     ) -> Option<ItemId> {
@@ -1695,7 +1649,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
                 clang_sys::CXCursor_TypeRef |
                 clang_sys::CXCursor_TypedefDecl |
                 clang_sys::CXCursor_TypeAliasDecl => {
-                    // The `with_id` ID will potentially end up unused if we give up
+                    // The `with_id` id will potentially end up unused if we give up
                     // on this type (for example, because it has const value
                     // template args), so if we pass `with_id` as the parent, it is
                     // potentially a dangling reference. Instead, use the canonical
@@ -1854,7 +1808,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// If we have already resolved the type for the given type declaration,
     /// return its `ItemId`. Otherwise, return `None`.
-    pub(crate) fn get_resolved_type(
+    pub fn get_resolved_type(
         &self,
         decl: &clang::CanonicalTypeDeclaration,
     ) -> Option<TypeId> {
@@ -1870,7 +1824,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Looks up for an already resolved type, either because it's builtin, or
     /// because we already have it in the map.
-    pub(crate) fn builtin_or_resolved_ty(
+    pub fn builtin_or_resolved_ty(
         &mut self,
         with_id: ItemId,
         parent_id: Option<ItemId>,
@@ -1940,7 +1894,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     /// We should probably make the constness tracking separate, so it doesn't
     /// bloat that much, but hey, we already bloat the heck out of builtin
     /// types.
-    pub(crate) fn build_ty_wrapper(
+    pub fn build_ty_wrapper(
         &mut self,
         with_id: ItemId,
         wrapped_id: TypeId,
@@ -1953,7 +1907,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     /// A wrapper over a type that adds a const qualifier explicitly.
     ///
     /// Needed to handle const methods in C++, wrapping the type .
-    pub(crate) fn build_const_wrapper(
+    pub fn build_const_wrapper(
         &mut self,
         with_id: ItemId,
         wrapped_id: TypeId,
@@ -1990,8 +1944,8 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         with_id.as_type_id_unchecked()
     }
 
-    /// Returns the next item ID to be used for an item.
-    pub(crate) fn next_item_id(&mut self) -> ItemId {
+    /// Returns the next item id to be used for an item.
+    pub fn next_item_id(&mut self) -> ItemId {
         let ret = ItemId(self.items.len());
         self.items.push(None);
         ret
@@ -2020,7 +1974,6 @@ If you encounter an error missing from this list, please file an issue or a PR!"
             CXType_ULongLong => TypeKind::Int(IntKind::ULongLong),
             CXType_Int128 => TypeKind::Int(IntKind::I128),
             CXType_UInt128 => TypeKind::Int(IntKind::U128),
-            CXType_Float16 | CXType_Half => TypeKind::Float(FloatKind::Float16),
             CXType_Float => TypeKind::Float(FloatKind::Float),
             CXType_Double => TypeKind::Float(FloatKind::Double),
             CXType_LongDouble => TypeKind::Float(FloatKind::LongDouble),
@@ -2029,7 +1982,6 @@ If you encounter an error missing from this list, please file an issue or a PR!"
                 let float_type =
                     ty.elem_type().expect("Not able to resolve complex type?");
                 let float_kind = match float_type.kind() {
-                    CXType_Float16 | CXType_Half => FloatKind::Float16,
                     CXType_Float => FloatKind::Float,
                     CXType_Double => FloatKind::Double,
                     CXType_LongDouble => FloatKind::LongDouble,
@@ -2063,124 +2015,17 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Get the current Clang translation unit that is being processed.
-    pub(crate) fn translation_unit(&self) -> &clang::TranslationUnit {
+    pub fn translation_unit(&self) -> &clang::TranslationUnit {
         &self.translation_unit
     }
 
-    /// Initialize fallback translation unit if it does not exist and
-    /// then return a mutable reference to the fallback translation unit.
-    pub(crate) fn try_ensure_fallback_translation_unit(
-        &mut self,
-    ) -> Option<&mut clang::FallbackTranslationUnit> {
-        if self.fallback_tu.is_none() {
-            let file = format!(
-                "{}/.macro_eval.c",
-                match self.options().clang_macro_fallback_build_dir {
-                    Some(ref path) => path.as_os_str().to_str()?,
-                    None => ".",
-                }
-            );
-
-            let index = clang::Index::new(false, false);
-
-            let mut header_names_to_compile = Vec::new();
-            let mut header_paths = Vec::new();
-            let mut header_contents = String::new();
-            for input_header in self.options.input_headers.iter() {
-                let path = Path::new(input_header.as_ref());
-                if let Some(header_path) = path.parent() {
-                    if header_path == Path::new("") {
-                        header_paths.push(".");
-                    } else {
-                        header_paths.push(header_path.as_os_str().to_str()?);
-                    }
-                } else {
-                    header_paths.push(".");
-                }
-                let header_name = path.file_name()?.to_str()?;
-                header_names_to_compile
-                    .push(header_name.split(".h").next()?.to_string());
-                header_contents +=
-                    format!("\n#include <{header_name}>").as_str();
-            }
-            let header_to_precompile = format!(
-                "{}/{}",
-                match self.options().clang_macro_fallback_build_dir {
-                    Some(ref path) => path.as_os_str().to_str()?,
-                    None => ".",
-                },
-                header_names_to_compile.join("-") + "-precompile.h"
-            );
-            let pch = header_to_precompile.clone() + ".pch";
-
-            let mut header_to_precompile_file = OpenOptions::new()
-                .create(true)
-                .truncate(true)
-                .write(true)
-                .open(&header_to_precompile)
-                .ok()?;
-            header_to_precompile_file
-                .write_all(header_contents.as_bytes())
-                .ok()?;
-
-            let mut c_args = Vec::new();
-            c_args.push("-x".to_string().into_boxed_str());
-            c_args.push("c-header".to_string().into_boxed_str());
-            for header_path in header_paths {
-                c_args.push(format!("-I{header_path}").into_boxed_str());
-            }
-            c_args.extend(
-                self.options
-                    .clang_args
-                    .iter()
-                    .filter(|next| {
-                        !self.options.input_headers.contains(next) &&
-                            next.as_ref() != "-include"
-                    })
-                    .cloned(),
-            );
-            let mut tu = clang::TranslationUnit::parse(
-                &index,
-                &header_to_precompile,
-                &c_args,
-                &[],
-                clang_sys::CXTranslationUnit_ForSerialization,
-            )?;
-            tu.save(&pch).ok()?;
-
-            let mut c_args = vec![
-                "-include-pch".to_string().into_boxed_str(),
-                pch.clone().into_boxed_str(),
-            ];
-            c_args.extend(
-                self.options
-                    .clang_args
-                    .clone()
-                    .iter()
-                    .filter(|next| {
-                        !self.options.input_headers.contains(next) &&
-                            next.as_ref() != "-include"
-                    })
-                    .cloned(),
-            );
-            self.fallback_tu = Some(clang::FallbackTranslationUnit::new(
-                file,
-                header_to_precompile,
-                pch,
-                &c_args,
-            )?);
-        }
-
-        self.fallback_tu.as_mut()
-    }
-
     /// Have we parsed the macro named `macro_name` already?
-    pub(crate) fn parsed_macro(&self, macro_name: &[u8]) -> bool {
+    pub fn parsed_macro(&self, macro_name: &[u8]) -> bool {
         self.parsed_macros.contains_key(macro_name)
     }
 
     /// Get the currently parsed macros.
-    pub(crate) fn parsed_macros(
+    pub fn parsed_macros(
         &self,
     ) -> &StdHashMap<Vec<u8>, cexpr::expr::EvalResult> {
         debug_assert!(!self.in_codegen_phase());
@@ -2188,7 +2033,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Mark the macro named `macro_name` as parsed.
-    pub(crate) fn note_parsed_macro(
+    pub fn note_parsed_macro(
         &mut self,
         id: Vec<u8>,
         value: cexpr::expr::EvalResult,
@@ -2197,16 +2042,16 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Are we in the codegen phase?
-    pub(crate) fn in_codegen_phase(&self) -> bool {
+    pub fn in_codegen_phase(&self) -> bool {
         self.in_codegen
     }
 
-    /// Mark the type with the given `name` as replaced by the type with ID
+    /// Mark the type with the given `name` as replaced by the type with id
     /// `potential_ty`.
     ///
     /// Replacement types are declared using the `replaces="xxx"` annotation,
     /// and implies that the original type is hidden.
-    pub(crate) fn replace(&mut self, name: &[String], potential_ty: ItemId) {
+    pub fn replace(&mut self, name: &[String], potential_ty: ItemId) {
         match self.replacements.entry(name.into()) {
             Entry::Vacant(entry) => {
                 debug!(
@@ -2229,7 +2074,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Has the item with the given `name` and `id` been replaced by another
     /// type?
-    pub(crate) fn is_replaced_type<Id: Into<ItemId>>(
+    pub fn is_replaced_type<Id: Into<ItemId>>(
         &self,
         path: &[String],
         id: Id,
@@ -2239,7 +2084,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Is the type with the given `name` marked as opaque?
-    pub(crate) fn opaque_by_name(&self, path: &[String]) -> bool {
+    pub fn opaque_by_name(&self, path: &[String]) -> bool {
         debug_assert!(
             self.in_codegen_phase(),
             "You're not supposed to call this yet"
@@ -2331,9 +2176,9 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         (module_name, kind)
     }
 
-    /// Given a CXCursor_Namespace cursor, return the item ID of the
+    /// Given a CXCursor_Namespace cursor, return the item id of the
     /// corresponding module, or create one on the fly.
-    pub(crate) fn module(&mut self, cursor: clang::Cursor) -> ModuleId {
+    pub fn module(&mut self, cursor: clang::Cursor) -> ModuleId {
         use clang_sys::*;
         assert_eq!(cursor.kind(), CXCursor_Namespace, "Be a nice person");
         let cursor = cursor.canonical();
@@ -2364,7 +2209,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Start traversing the module with the given `module_id`, invoke the
     /// callback `cb`, and then return to traversing the original module.
-    pub(crate) fn with_module<F>(&mut self, module_id: ModuleId, cb: F)
+    pub fn with_module<F>(&mut self, module_id: ModuleId, cb: F)
     where
         F: FnOnce(&mut Self),
     {
@@ -2382,7 +2227,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     ///
     /// If no items are explicitly allowlisted, then all items are considered
     /// allowlisted.
-    pub(crate) fn allowlisted_items(&self) -> &ItemSet {
+    pub fn allowlisted_items(&self) -> &ItemSet {
         assert!(self.in_codegen_phase());
         assert!(self.current_module == self.root_module);
 
@@ -2391,7 +2236,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Check whether a particular blocklisted type implements a trait or not.
     /// Results may be cached.
-    pub(crate) fn blocklisted_type_implements_trait(
+    pub fn blocklisted_type_implements_trait(
         &self,
         item: &Item,
         derive_trait: DeriveTrait,
@@ -2432,7 +2277,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Is the given type a type from <stdint.h> that corresponds to a Rust primitive type?
-    pub(crate) fn is_stdint_type(&self, name: &str) -> bool {
+    pub fn is_stdint_type(&self, name: &str) -> bool {
         match name {
             "int8_t" | "uint8_t" | "int16_t" | "uint16_t" | "int32_t" |
             "uint32_t" | "int64_t" | "uint64_t" | "uintptr_t" |
@@ -2443,7 +2288,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Get a reference to the set of items we should generate.
-    pub(crate) fn codegen_items(&self) -> &ItemSet {
+    pub fn codegen_items(&self) -> &ItemSet {
         assert!(self.in_codegen_phase());
         assert!(self.current_module == self.root_module);
         self.codegen_items.as_ref().unwrap()
@@ -2467,8 +2312,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
                     if self.options().allowlisted_types.is_empty() &&
                         self.options().allowlisted_functions.is_empty() &&
                         self.options().allowlisted_vars.is_empty() &&
-                        self.options().allowlisted_files.is_empty() &&
-                        self.options().allowlisted_items.is_empty()
+                        self.options().allowlisted_files.is_empty()
                     {
                         return true;
                     }
@@ -2498,11 +2342,6 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
                     let name = item.path_for_allowlisting(self)[1..].join("::");
                     debug!("allowlisted_items: testing {:?}", name);
-
-                    if self.options().allowlisted_items.matches(&name) {
-                        return true;
-                    }
-
                     match *item.kind() {
                         ItemKind::Module(..) => true,
                         ItemKind::Function(_) => {
@@ -2568,11 +2407,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
                                 );
                                 let name = prefix_path[1..].join("::");
                                 prefix_path.pop().unwrap();
-                                self.options().allowlisted_vars.matches(&name)
-                                    || self
-                                        .options()
-                                        .allowlisted_items
-                                        .matches(name)
+                                self.options().allowlisted_vars.matches(name)
                             })
                         }
                     }
@@ -2619,26 +2454,30 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         self.allowlisted = Some(allowlisted);
         self.codegen_items = Some(codegen_items);
 
+        let mut warnings = Vec::new();
+
         for item in self.options().allowlisted_functions.unmatched_items() {
-            unused_regex_diagnostic(item, "--allowlist-function", self);
+            warnings
+                .push(format!("unused option: --allowlist-function {}", item));
         }
 
         for item in self.options().allowlisted_vars.unmatched_items() {
-            unused_regex_diagnostic(item, "--allowlist-var", self);
+            warnings.push(format!("unused option: --allowlist-var {}", item));
         }
 
         for item in self.options().allowlisted_types.unmatched_items() {
-            unused_regex_diagnostic(item, "--allowlist-type", self);
+            warnings.push(format!("unused option: --allowlist-type {}", item));
         }
 
-        for item in self.options().allowlisted_items.unmatched_items() {
-            unused_regex_diagnostic(item, "--allowlist-items", self);
+        for msg in warnings {
+            warn!("{}", msg);
+            self.warnings.push(msg);
         }
     }
 
     /// Convenient method for getting the prefix to use for most traits in
     /// codegen depending on the `use_core` option.
-    pub(crate) fn trait_prefix(&self) -> Ident {
+    pub fn trait_prefix(&self) -> Ident {
         if self.options().use_core {
             self.rust_ident_raw("core")
         } else {
@@ -2647,23 +2486,13 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Call if a bindgen complex is generated
-    pub(crate) fn generated_bindgen_complex(&self) {
+    pub fn generated_bindgen_complex(&self) {
         self.generated_bindgen_complex.set(true)
     }
 
     /// Whether we need to generate the bindgen complex type
-    pub(crate) fn need_bindgen_complex_type(&self) -> bool {
+    pub fn need_bindgen_complex_type(&self) -> bool {
         self.generated_bindgen_complex.get()
-    }
-
-    /// Call if a bindgen float16 is generated
-    pub(crate) fn generated_bindgen_float16(&self) {
-        self.generated_bindgen_float16.set(true)
-    }
-
-    /// Whether we need to generate the bindgen float16 type
-    pub(crate) fn need_bindgen_float16_type(&self) -> bool {
-        self.generated_bindgen_float16.get()
     }
 
     /// Compute which `enum`s have an associated `typedef` definition.
@@ -2701,7 +2530,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
                     }
                 }
 
-                // Find enums in this module, and record the ID of each one that
+                // Find enums in this module, and record the id of each one that
                 // has a typedef.
                 for child_id in module.children() {
                     if let Some(ItemKind::Type(ty)) =
@@ -2722,7 +2551,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Look up whether `id` refers to an `enum` whose underlying type is
     /// defined by a `typedef`.
-    pub(crate) fn is_enum_typedef_combo(&self, id: ItemId) -> bool {
+    pub fn is_enum_typedef_combo(&self, id: ItemId) -> bool {
         assert!(
             self.in_codegen_phase(),
             "We only compute enum_typedef_combos when we enter codegen",
@@ -2745,10 +2574,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Look up whether the item with `id` can
     /// derive debug or not.
-    pub(crate) fn lookup_can_derive_debug<Id: Into<ItemId>>(
-        &self,
-        id: Id,
-    ) -> bool {
+    pub fn lookup_can_derive_debug<Id: Into<ItemId>>(&self, id: Id) -> bool {
         let id = id.into();
         assert!(
             self.in_codegen_phase(),
@@ -2775,10 +2601,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Look up whether the item with `id` can
     /// derive default or not.
-    pub(crate) fn lookup_can_derive_default<Id: Into<ItemId>>(
-        &self,
-        id: Id,
-    ) -> bool {
+    pub fn lookup_can_derive_default<Id: Into<ItemId>>(&self, id: Id) -> bool {
         let id = id.into();
         assert!(
             self.in_codegen_phase(),
@@ -2816,10 +2639,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
     /// Look up whether the item with `id` can
     /// derive hash or not.
-    pub(crate) fn lookup_can_derive_hash<Id: Into<ItemId>>(
-        &self,
-        id: Id,
-    ) -> bool {
+    pub fn lookup_can_derive_hash<Id: Into<ItemId>>(&self, id: Id) -> bool {
         let id = id.into();
         assert!(
             self.in_codegen_phase(),
@@ -2848,9 +2668,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` can derive `Partial{Eq,Ord}`.
-    pub(crate) fn lookup_can_derive_partialeq_or_partialord<
-        Id: Into<ItemId>,
-    >(
+    pub fn lookup_can_derive_partialeq_or_partialord<Id: Into<ItemId>>(
         &self,
         id: Id,
     ) -> CanDerive {
@@ -2871,10 +2689,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` can derive `Copy` or not.
-    pub(crate) fn lookup_can_derive_copy<Id: Into<ItemId>>(
-        &self,
-        id: Id,
-    ) -> bool {
+    pub fn lookup_can_derive_copy<Id: Into<ItemId>>(&self, id: Id) -> bool {
         assert!(
             self.in_codegen_phase(),
             "We only compute can_derive_debug when we enter codegen"
@@ -2897,7 +2712,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` has type parameter in array or not.
-    pub(crate) fn lookup_has_type_param_in_array<Id: Into<ItemId>>(
+    pub fn lookup_has_type_param_in_array<Id: Into<ItemId>>(
         &self,
         id: Id,
     ) -> bool {
@@ -2924,7 +2739,7 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Look up whether the item with `id` has array or not.
-    pub(crate) fn lookup_has_float<Id: Into<ItemId>>(&self, id: Id) -> bool {
+    pub fn lookup_has_float<Id: Into<ItemId>>(&self, id: Id) -> bool {
         assert!(
             self.in_codegen_phase(),
             "We only compute has float when we enter codegen"
@@ -2936,42 +2751,41 @@ If you encounter an error missing from this list, please file an issue or a PR!"
     }
 
     /// Check if `--no-partialeq` flag is enabled for this item.
-    pub(crate) fn no_partialeq_by_name(&self, item: &Item) -> bool {
+    pub fn no_partialeq_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().no_partialeq_types.matches(name)
     }
 
     /// Check if `--no-copy` flag is enabled for this item.
-    pub(crate) fn no_copy_by_name(&self, item: &Item) -> bool {
+    pub fn no_copy_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().no_copy_types.matches(name)
     }
 
     /// Check if `--no-debug` flag is enabled for this item.
-    pub(crate) fn no_debug_by_name(&self, item: &Item) -> bool {
+    pub fn no_debug_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().no_debug_types.matches(name)
     }
 
     /// Check if `--no-default` flag is enabled for this item.
-    pub(crate) fn no_default_by_name(&self, item: &Item) -> bool {
+    pub fn no_default_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().no_default_types.matches(name)
     }
 
     /// Check if `--no-hash` flag is enabled for this item.
-    pub(crate) fn no_hash_by_name(&self, item: &Item) -> bool {
+    pub fn no_hash_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().no_hash_types.matches(name)
     }
 
     /// Check if `--must-use-type` flag is enabled for this item.
-    pub(crate) fn must_use_type_by_name(&self, item: &Item) -> bool {
+    pub fn must_use_type_by_name(&self, item: &Item) -> bool {
         let name = item.path_for_allowlisting(self)[1..].join("::");
         self.options().must_use_types.matches(name)
     }
 
-    /// Wrap some tokens in an `unsafe` block if the `--wrap-unsafe-ops` option is enabled.
     pub(crate) fn wrap_unsafe_ops(&self, tokens: impl ToTokens) -> TokenStream {
         if self.options.wrap_unsafe_ops {
             quote!(unsafe { #tokens })
@@ -2980,8 +2794,6 @@ If you encounter an error missing from this list, please file an issue or a PR!"
         }
     }
 
-    /// Get the suffix to be added to `static` functions if the `--wrap-static-fns` option is
-    /// enabled.
     pub(crate) fn wrap_static_fns_suffix(&self) -> &str {
         self.options()
             .wrap_static_fns_suffix
@@ -2992,15 +2804,15 @@ If you encounter an error missing from this list, please file an issue or a PR!"
 
 /// A builder struct for configuring item resolution options.
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct ItemResolver {
+pub struct ItemResolver {
     id: ItemId,
     through_type_refs: bool,
     through_type_aliases: bool,
 }
 
 impl ItemId {
-    /// Create an `ItemResolver` from this item ID.
-    pub(crate) fn into_resolver(self) -> ItemResolver {
+    /// Create an `ItemResolver` from this item id.
+    pub fn into_resolver(self) -> ItemResolver {
         self.into()
     }
 }
@@ -3015,8 +2827,8 @@ where
 }
 
 impl ItemResolver {
-    /// Construct a new `ItemResolver` from the given ID.
-    pub(crate) fn new<Id: Into<ItemId>>(id: Id) -> ItemResolver {
+    /// Construct a new `ItemResolver` from the given id.
+    pub fn new<Id: Into<ItemId>>(id: Id) -> ItemResolver {
         let id = id.into();
         ItemResolver {
             id,
@@ -3026,19 +2838,19 @@ impl ItemResolver {
     }
 
     /// Keep resolving through `Type::TypeRef` items.
-    pub(crate) fn through_type_refs(mut self) -> ItemResolver {
+    pub fn through_type_refs(mut self) -> ItemResolver {
         self.through_type_refs = true;
         self
     }
 
     /// Keep resolving through `Type::Alias` items.
-    pub(crate) fn through_type_aliases(mut self) -> ItemResolver {
+    pub fn through_type_aliases(mut self) -> ItemResolver {
         self.through_type_aliases = true;
         self
     }
 
     /// Finish configuring and perform the actual item resolution.
-    pub(crate) fn resolve(self, ctx: &BindgenContext) -> &Item {
+    pub fn resolve(self, ctx: &BindgenContext) -> &Item {
         assert!(ctx.collected_typerefs());
 
         let mut id = self.id;
@@ -3075,7 +2887,7 @@ impl ItemResolver {
 
 /// A type that we are in the middle of parsing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct PartialType {
+pub struct PartialType {
     decl: Cursor,
     // Just an ItemId, and not a TypeId, because we haven't finished this type
     // yet, so there's still time for things to go wrong.
@@ -3084,19 +2896,19 @@ pub(crate) struct PartialType {
 
 impl PartialType {
     /// Construct a new `PartialType`.
-    pub(crate) fn new(decl: Cursor, id: ItemId) -> PartialType {
+    pub fn new(decl: Cursor, id: ItemId) -> PartialType {
         // assert!(decl == decl.canonical());
         PartialType { decl, id }
     }
 
     /// The cursor pointing to this partial type's declaration location.
-    pub(crate) fn decl(&self) -> &Cursor {
+    pub fn decl(&self) -> &Cursor {
         &self.decl
     }
 
     /// The item ID allocated for this type. This is *NOT* a key for an entry in
     /// the context's item set yet!
-    pub(crate) fn id(&self) -> ItemId {
+    pub fn id(&self) -> ItemId {
         self.id
     }
 }
@@ -3131,25 +2943,5 @@ impl TemplateParameters for PartialType {
             }
             _ => 0,
         }
-    }
-}
-
-fn unused_regex_diagnostic(item: &str, name: &str, _ctx: &BindgenContext) {
-    warn!("unused option: {} {}", name, item);
-
-    #[cfg(feature = "experimental")]
-    if _ctx.options().emit_diagnostics {
-        use crate::diagnostics::{Diagnostic, Level};
-
-        Diagnostic::default()
-            .with_title(
-                format!("Unused regular expression: `{}`.", item),
-                Level::Warn,
-            )
-            .add_annotation(
-                format!("This regular expression was passed to `{}`.", name),
-                Level::Note,
-            )
-            .display();
     }
 }

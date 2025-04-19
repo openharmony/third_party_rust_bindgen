@@ -1,4 +1,11 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
+extern crate libloading;
 pub struct TestLib {
     __library: ::libloading::Library,
     pub foo: Result<
@@ -9,7 +16,9 @@ pub struct TestLib {
         ::libloading::Error,
     >,
     pub bar: Result<
-        unsafe extern "C" fn(x: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int,
+        unsafe extern "C" fn(
+            x: *mut ::std::os::raw::c_void,
+        ) -> ::std::os::raw::c_int,
         ::libloading::Error,
     >,
     pub baz: Result<
@@ -25,7 +34,9 @@ impl TestLib {
         let library = ::libloading::Library::new(path)?;
         unsafe { Self::from_library(library) }
     }
-    pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
+    pub unsafe fn from_library<L>(
+        library: L,
+    ) -> Result<Self, ::libloading::Error>
     where
         L: Into<::libloading::Library>,
     {
@@ -45,10 +56,17 @@ impl TestLib {
         x: ::std::os::raw::c_int,
         y: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int {
-        unsafe { (self.foo.as_ref().expect("Expected function, got error."))(x, y) }
+        unsafe {
+            (self.foo.as_ref().expect("Expected function, got error."))(x, y)
+        }
     }
-    pub unsafe fn bar(&self, x: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int {
-        unsafe { (self.bar.as_ref().expect("Expected function, got error."))(x) }
+    pub unsafe fn bar(
+        &self,
+        x: *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_int {
+        unsafe {
+            (self.bar.as_ref().expect("Expected function, got error."))(x)
+        }
     }
     pub unsafe fn baz(&self) -> ::std::os::raw::c_int {
         unsafe { (self.baz.as_ref().expect("Expected function, got error."))() }

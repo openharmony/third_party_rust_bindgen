@@ -1,10 +1,8 @@
 [package]
 name = "quickchecking"
 description = "Bindgen property tests with quickcheck. Generate random valid C code and pass it to the csmith/predicate.py script"
-version = "0.0.0"
-publish = false
-rust-version = "1.70"
-edition = "2018"
+version = "0.1.0"
+authors = ["Shea Newton <sheanewt@gmail.com>"]
 
 [lib]
 name = "quickchecking"
@@ -15,9 +13,11 @@ name = "quickchecking"
 path = "src/bin.rs"
 
 [dependencies]
-clap = "4"
-quickcheck = "1.0"
-tempfile = "3"
+clap = "2.28"
+lazy_static = "1.0"
+quickcheck = "0.4"
+rand = "0.3"
+tempdir = "0.3"
 
 [features]
 # No features by default.

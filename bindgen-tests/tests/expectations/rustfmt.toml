@@ -1,2 +1,0 @@
-# disable rustfmt for this crate so running `cargo fmt` doesn't affect the expected binding files
-disable_all_formatting = true

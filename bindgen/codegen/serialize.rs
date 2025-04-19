@@ -10,7 +10,7 @@ use crate::ir::item::ItemCanonicalName;
 use crate::ir::item_kind::ItemKind;
 use crate::ir::ty::{FloatKind, Type, TypeKind};
 
-use super::{CodegenError, WrapAsVariadic};
+use super::CodegenError;
 
 fn get_loc(item: &Item) -> String {
     item.location()
@@ -18,7 +18,7 @@ fn get_loc(item: &Item) -> String {
         .unwrap_or_else(|| "unknown".to_owned())
 }
 
-pub(super) trait CSerialize<'a> {
+pub(crate) trait CSerialize<'a> {
     type Extra;
 
     fn serialize<W: Write>(
@@ -31,34 +31,36 @@ pub(super) trait CSerialize<'a> {
 }
 
 impl<'a> CSerialize<'a> for Item {
-    type Extra = &'a Option<WrapAsVariadic>;
+    type Extra = ();
 
     fn serialize<W: Write>(
         &self,
         ctx: &BindgenContext,
-        extra: Self::Extra,
+        (): Self::Extra,
         stack: &mut Vec<String>,
         writer: &mut W,
     ) -> Result<(), CodegenError> {
         match self.kind() {
             ItemKind::Function(func) => {
-                func.serialize(ctx, (self, extra), stack, writer)
+                func.serialize(ctx, self, stack, writer)
             }
-            kind => Err(CodegenError::Serialize {
-                msg: format!("Cannot serialize item kind {:?}", kind),
-                loc: get_loc(self),
-            }),
+            kind => {
+                return Err(CodegenError::Serialize {
+                    msg: format!("Cannot serialize item kind {:?}", kind),
+                    loc: get_loc(self),
+                });
+            }
         }
     }
 }
 
 impl<'a> CSerialize<'a> for Function {
-    type Extra = (&'a Item, &'a Option<WrapAsVariadic>);
+    type Extra = &'a Item;
 
     fn serialize<W: Write>(
         &self,
         ctx: &BindgenContext,
-        (item, wrap_as_variadic): Self::Extra,
+        item: Self::Extra,
         stack: &mut Vec<String>,
         writer: &mut W,
     ) -> Result<(), CodegenError> {
@@ -77,122 +79,69 @@ impl<'a> CSerialize<'a> for Function {
             _ => unreachable!(),
         };
 
-        assert!(!signature.is_variadic());
-
         let name = self.name();
 
-        // Function arguments stored as `(name, type_id)` tuples.
+        // Function argoments stored as `(name, type_id)` tuples.
         let args = {
             let mut count = 0;
-
-            let idx_to_prune = wrap_as_variadic.as_ref().map(
-                |WrapAsVariadic {
-                     idx_of_va_list_arg, ..
-                 }| *idx_of_va_list_arg,
-            );
 
             signature
                 .argument_types()
                 .iter()
                 .cloned()
-                .enumerate()
-                .filter_map(|(idx, (opt_name, type_id))| {
-                    if Some(idx) == idx_to_prune {
-                        None
-                    } else {
-                        Some((
-                            opt_name.unwrap_or_else(|| {
-                                let name = format!("arg_{}", count);
-                                count += 1;
-                                name
-                            }),
-                            type_id,
-                        ))
-                    }
+                .map(|(opt_name, type_id)| {
+                    (
+                        opt_name.unwrap_or_else(|| {
+                            let name = format!("arg_{}", count);
+                            count += 1;
+                            name
+                        }),
+                        type_id,
+                    )
                 })
                 .collect::<Vec<_>>()
         };
 
         // The name used for the wrapper self.
         let wrap_name = format!("{}{}", name, ctx.wrap_static_fns_suffix());
-
         // The function's return type
-        let (ret_item, ret_ty) = {
-            let type_id = signature.return_type();
-            let ret_item = ctx.resolve_item(type_id);
-            let ret_ty = ret_item.expect_type();
+        let ret_ty = signature.return_type();
 
-            // Write `ret_ty`.
-            ret_ty.serialize(ctx, ret_item, stack, writer)?;
-
-            (ret_item, ret_ty)
-        };
-
-        const INDENT: &str = "    ";
-
-        // Write `wrap_name(args`.
+        // Write `ret_ty wrap_name(args) asm("wrap_name");`
+        ret_ty.serialize(ctx, (), stack, writer)?;
         write!(writer, " {}(", wrap_name)?;
-        serialize_args(&args, ctx, writer)?;
-
-        if wrap_as_variadic.is_none() {
-            // Write `) { name(` if the function returns void and `) { return name(` if it does not.
-            if ret_ty.is_void() {
-                write!(writer, ") {{ {}(", name)?;
-            } else {
-                write!(writer, ") {{ return {}(", name)?;
-            }
+        if args.is_empty() {
+            write!(writer, "void")?;
         } else {
-            // Write `, ...) {`
-            writeln!(writer, ", ...) {{")?;
-
-            // Declare the return type `RET_TY ret;` if their is a need to do so
-            if !ret_ty.is_void() {
-                write!(writer, "{INDENT}")?;
-                ret_ty.serialize(ctx, ret_item, stack, writer)?;
-                writeln!(writer, " ret;")?;
-            }
-
-            // Setup va_list
-            writeln!(writer, "{INDENT}va_list ap;\n")?;
-            writeln!(
+            serialize_sep(
+                ", ",
+                args.iter(),
+                ctx,
                 writer,
-                "{INDENT}va_start(ap, {});",
-                args.last().unwrap().0
+                |(name, type_id), ctx, buf| {
+                    type_id.serialize(ctx, (), &mut vec![name.clone()], buf)
+                },
             )?;
-
-            write!(writer, "{INDENT}")?;
-            // Write `ret = name(` or `name(` depending if the function returns something
-            if !ret_ty.is_void() {
-                write!(writer, "ret = ")?;
-            }
-            write!(writer, "{}(", name)?;
         }
+        writeln!(writer, ") asm(\"{}\");", wrap_name)?;
 
-        // Get the arguments names and insert at the right place if necessary `ap`
-        let mut args: Vec<_> = args.into_iter().map(|(name, _)| name).collect();
-        if let Some(WrapAsVariadic {
-            idx_of_va_list_arg, ..
-        }) = wrap_as_variadic
-        {
-            args.insert(*idx_of_va_list_arg, "ap".to_owned());
-        }
-
-        // Write `arg_names);`.
-        serialize_sep(", ", args.iter(), ctx, writer, |name, _, buf| {
+        // Write `ret_ty wrap_name(args) { return name(arg_names)' }`
+        ret_ty.serialize(ctx, (), stack, writer)?;
+        write!(writer, " {}(", wrap_name)?;
+        serialize_sep(
+            ", ",
+            args.iter(),
+            ctx,
+            writer,
+            |(name, type_id), _, buf| {
+                type_id.serialize(ctx, (), &mut vec![name.clone()], buf)
+            },
+        )?;
+        write!(writer, ") {{ return {}(", name)?;
+        serialize_sep(", ", args.iter(), ctx, writer, |(name, _), _, buf| {
             write!(buf, "{}", name).map_err(From::from)
         })?;
-        #[rustfmt::skip]
-        write!(writer, ");{}", if wrap_as_variadic.is_none() { " " } else { "\n" })?;
-
-        if wrap_as_variadic.is_some() {
-            // End va_list and return the result if their is one
-            writeln!(writer, "{INDENT}va_end(ap);")?;
-            if !ret_ty.is_void() {
-                writeln!(writer, "{INDENT}return ret;")?;
-            }
-        }
-
-        writeln!(writer, "}}")?;
+        writeln!(writer, "); }}")?;
 
         Ok(())
     }
@@ -270,7 +219,6 @@ impl<'a> CSerialize<'a> for Type {
                     write!(writer, "const ")?;
                 }
                 match float_kind {
-                    FloatKind::Float16 => write!(writer, "_Float16")?,
                     FloatKind::Float => write!(writer, "float")?,
                     FloatKind::Double => write!(writer, "double")?,
                     FloatKind::LongDouble => write!(writer, "long double")?,
@@ -282,7 +230,6 @@ impl<'a> CSerialize<'a> for Type {
                     write!(writer, "const ")?;
                 }
                 match float_kind {
-                    FloatKind::Float16 => write!(writer, "_Float16 complex")?,
                     FloatKind::Float => write!(writer, "float complex")?,
                     FloatKind::Double => write!(writer, "double complex")?,
                     FloatKind::LongDouble => {
@@ -324,26 +271,21 @@ impl<'a> CSerialize<'a> for Type {
                 }
                 write!(writer, ")")?;
 
-                let args = signature.argument_types();
-                if args.is_empty() {
-                    write!(writer, " (void)")?;
-                } else {
-                    write!(writer, " (")?;
-                    serialize_sep(
-                        ", ",
-                        args.iter(),
-                        ctx,
-                        writer,
-                        |(name, type_id), ctx, buf| {
-                            let mut stack = vec![];
-                            if let Some(name) = name {
-                                stack.push(name.clone());
-                            }
-                            type_id.serialize(ctx, (), &mut stack, buf)
-                        },
-                    )?;
-                    write!(writer, ")")?
-                }
+                write!(writer, " (")?;
+                serialize_sep(
+                    ", ",
+                    signature.argument_types().iter(),
+                    ctx,
+                    writer,
+                    |(name, type_id), ctx, buf| {
+                        let mut stack = vec![];
+                        if let Some(name) = name {
+                            stack.push(name.clone());
+                        }
+                        type_id.serialize(ctx, (), &mut stack, buf)
+                    },
+                )?;
+                write!(writer, ")")?
             }
             TypeKind::ResolvedTypeRef(type_id) => {
                 if self.is_const() {
@@ -371,14 +313,6 @@ impl<'a> CSerialize<'a> for Type {
                     CompKind::Union => write!(writer, "union {}", name)?,
                 };
             }
-            TypeKind::Enum(_enum_ty) => {
-                if self.is_const() {
-                    write!(writer, "const ")?;
-                }
-
-                let name = item.canonical_name(ctx);
-                write!(writer, "enum {}", name)?;
-            }
             ty => {
                 return Err(CodegenError::Serialize {
                     msg: format!("Cannot serialize type kind {:?}", ty),
@@ -396,28 +330,6 @@ impl<'a> CSerialize<'a> for Type {
 
         Ok(())
     }
-}
-
-fn serialize_args<W: Write>(
-    args: &[(String, TypeId)],
-    ctx: &BindgenContext,
-    writer: &mut W,
-) -> Result<(), CodegenError> {
-    if args.is_empty() {
-        write!(writer, "void")?;
-    } else {
-        serialize_sep(
-            ", ",
-            args.iter(),
-            ctx,
-            writer,
-            |(name, type_id), ctx, buf| {
-                type_id.serialize(ctx, (), &mut vec![name.clone()], buf)
-            },
-        )?;
-    }
-
-    Ok(())
 }
 
 fn serialize_sep<

@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct __BindgenUnionField<T>(::std::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
@@ -24,7 +30,7 @@ impl<T> ::std::default::Default for __BindgenUnionField<T> {
 impl<T> ::std::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::std::marker::Copy for __BindgenUnionField<T> {}
@@ -52,27 +58,38 @@ pub struct ShouldDerivePartialEq {
 }
 #[test]
 fn bindgen_test_layout_ShouldDerivePartialEq() {
-    const UNINIT: ::std::mem::MaybeUninit<ShouldDerivePartialEq> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<ShouldDerivePartialEq> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
     assert_eq!(
         ::std::mem::size_of::<ShouldDerivePartialEq>(),
         152usize,
-        "Size of ShouldDerivePartialEq",
+        concat!("Size of: ", stringify!(ShouldDerivePartialEq))
     );
     assert_eq!(
         ::std::mem::align_of::<ShouldDerivePartialEq>(),
         4usize,
-        "Alignment of ShouldDerivePartialEq",
+        concat!("Alignment of ", stringify!(ShouldDerivePartialEq))
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).a) as usize - ptr as usize },
         0usize,
-        "Offset of field: ShouldDerivePartialEq::a",
+        concat!(
+            "Offset of field: ",
+            stringify!(ShouldDerivePartialEq),
+            "::",
+            stringify!(a)
+        )
     );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).b) as usize - ptr as usize },
         0usize,
-        "Offset of field: ShouldDerivePartialEq::b",
+        concat!(
+            "Offset of field: ",
+            stringify!(ShouldDerivePartialEq),
+            "::",
+            stringify!(b)
+        )
     );
 }
 impl Clone for ShouldDerivePartialEq {

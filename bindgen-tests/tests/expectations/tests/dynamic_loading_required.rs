@@ -1,4 +1,11 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
+extern crate libloading;
 pub struct TestLib {
     __library: ::libloading::Library,
     pub foo: unsafe extern "C" fn(
@@ -18,7 +25,9 @@ impl TestLib {
         let library = ::libloading::Library::new(path)?;
         Self::from_library(library)
     }
-    pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
+    pub unsafe fn from_library<L>(
+        library: L,
+    ) -> Result<Self, ::libloading::Error>
     where
         L: Into<::libloading::Library>,
     {
@@ -40,7 +49,10 @@ impl TestLib {
     ) -> ::std::os::raw::c_int {
         (self.foo)(x, y)
     }
-    pub unsafe fn bar(&self, x: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int {
+    pub unsafe fn bar(
+        &self,
+        x: *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_int {
         (self.bar)(x)
     }
     pub unsafe fn baz(&self) -> ::std::os::raw::c_int {

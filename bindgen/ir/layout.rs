@@ -8,13 +8,13 @@ use std::cmp;
 
 /// A type that represents the struct layout of a type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Layout {
+pub struct Layout {
     /// The size (in bytes) of this layout.
-    pub(crate) size: usize,
+    pub size: usize,
     /// The alignment (in bytes) of this layout.
-    pub(crate) align: usize,
+    pub align: usize,
     /// Whether this layout's members are packed or not.
-    pub(crate) packed: bool,
+    pub packed: bool,
 }
 
 #[test]
@@ -34,25 +34,23 @@ fn test_layout_for_size() {
 
 impl Layout {
     /// Gets the integer type name for a given known size.
-    pub(crate) fn known_type_for_size(
+    pub fn known_type_for_size(
         ctx: &BindgenContext,
         size: usize,
-    ) -> Option<syn::Type> {
+    ) -> Option<&'static str> {
         Some(match size {
-            16 if ctx.options().rust_features.i128_and_u128 => {
-                syn::parse_quote! { u128 }
-            }
-            8 => syn::parse_quote! { u64 },
-            4 => syn::parse_quote! { u32 },
-            2 => syn::parse_quote! { u16 },
-            1 => syn::parse_quote! { u8 },
+            16 if ctx.options().rust_features.i128_and_u128 => "u128",
+            8 => "u64",
+            4 => "u32",
+            2 => "u16",
+            1 => "u8",
             _ => return None,
         })
     }
 
     /// Construct a new `Layout` with the given `size` and `align`. It is not
     /// packed.
-    pub(crate) fn new(size: usize, align: usize) -> Self {
+    pub fn new(size: usize, align: usize) -> Self {
         Layout {
             size,
             align,
@@ -74,26 +72,33 @@ impl Layout {
 
     /// Creates a non-packed layout for a given size, trying to use the maximum
     /// alignment possible.
-    pub(crate) fn for_size(ctx: &BindgenContext, size: usize) -> Self {
+    pub fn for_size(ctx: &BindgenContext, size: usize) -> Self {
         Self::for_size_internal(ctx.target_pointer_size(), size)
     }
 
+    /// Is this a zero-sized layout?
+    pub fn is_zero(&self) -> bool {
+        self.size == 0 && self.align == 0
+    }
+
+    /// Construct a zero-sized layout.
+    pub fn zero() -> Self {
+        Self::new(0, 0)
+    }
+
     /// Get this layout as an opaque type.
-    pub(crate) fn opaque(&self) -> Opaque {
+    pub fn opaque(&self) -> Opaque {
         Opaque(*self)
     }
 }
 
 /// When we are treating a type as opaque, it is just a blob with a `Layout`.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Opaque(pub(crate) Layout);
+pub struct Opaque(pub Layout);
 
 impl Opaque {
     /// Construct a new opaque type from the given clang type.
-    pub(crate) fn from_clang_ty(
-        ty: &clang::Type,
-        ctx: &BindgenContext,
-    ) -> Type {
+    pub fn from_clang_ty(ty: &clang::Type, ctx: &BindgenContext) -> Type {
         let layout = Layout::new(ty.size(ctx), ty.align(ctx));
         let ty_kind = TypeKind::Opaque;
         let is_const = ty.is_const();
@@ -102,16 +107,16 @@ impl Opaque {
 
     /// Return the known rust type we should use to create a correctly-aligned
     /// field with this layout.
-    pub(crate) fn known_rust_type_for_array(
+    pub fn known_rust_type_for_array(
         &self,
         ctx: &BindgenContext,
-    ) -> Option<syn::Type> {
+    ) -> Option<&'static str> {
         Layout::known_type_for_size(ctx, self.0.align)
     }
 
     /// Return the array size that an opaque type for this layout should have if
     /// we know the correct type for it, or `None` otherwise.
-    pub(crate) fn array_size(&self, ctx: &BindgenContext) -> Option<usize> {
+    pub fn array_size(&self, ctx: &BindgenContext) -> Option<usize> {
         if self.known_rust_type_for_array(ctx).is_some() {
             Some(self.0.size / cmp::max(self.0.align, 1))
         } else {
@@ -122,7 +127,7 @@ impl Opaque {
     /// Return `true` if this opaque layout's array size will fit within the
     /// maximum number of array elements that Rust allows deriving traits
     /// with. Return `false` otherwise.
-    pub(crate) fn array_size_within_derive_limit(
+    pub fn array_size_within_derive_limit(
         &self,
         ctx: &BindgenContext,
     ) -> CanDerive {

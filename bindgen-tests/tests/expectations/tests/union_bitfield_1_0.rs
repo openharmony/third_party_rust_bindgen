@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct __BindgenBitfieldUnit<Storage> {
@@ -49,7 +55,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         let mut val = 0;
         for i in 0..(bit_width as usize) {
@@ -69,7 +76,8 @@ where
         debug_assert!(bit_width <= 64);
         debug_assert!(bit_offset / 8 < self.storage.as_ref().len());
         debug_assert!(
-            (bit_offset + (bit_width as usize)) / 8 <= self.storage.as_ref().len(),
+            (bit_offset + (bit_width as usize)) / 8 <=
+                self.storage.as_ref().len()
         );
         for i in 0..(bit_width as usize) {
             let mask = 1 << i;
@@ -108,7 +116,7 @@ impl<T> ::std::default::Default for __BindgenUnionField<T> {
 impl<T> ::std::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::std::marker::Copy for __BindgenUnionField<T> {}
@@ -135,8 +143,16 @@ pub struct U4 {
 }
 #[test]
 fn bindgen_test_layout_U4() {
-    assert_eq!(::std::mem::size_of::<U4>(), 4usize, "Size of U4");
-    assert_eq!(::std::mem::align_of::<U4>(), 4usize, "Alignment of U4");
+    assert_eq!(
+        ::std::mem::size_of::<U4>(),
+        4usize,
+        concat!("Size of: ", stringify!(U4))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<U4>(),
+        4usize,
+        concat!("Alignment of ", stringify!(U4))
+    );
 }
 impl Clone for U4 {
     fn clone(&self) -> Self {
@@ -147,7 +163,9 @@ impl U4 {
     #[inline]
     pub fn derp(&self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(self._bitfield_1.as_ref().get(0usize, 1u8) as u32)
+            ::std::mem::transmute(
+                self._bitfield_1.as_ref().get(0usize, 1u8) as u32
+            )
         }
     }
     #[inline]
@@ -161,16 +179,12 @@ impl U4 {
     pub fn new_bitfield_1(
         derp: ::std::os::raw::c_uint,
     ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                1u8,
-                {
-                    let derp: u32 = unsafe { ::std::mem::transmute(derp) };
-                    derp as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 1u8, {
+            let derp: u32 = unsafe { ::std::mem::transmute(derp) };
+            derp as u64
+        });
         __bindgen_bitfield_unit
     }
 }
@@ -183,8 +197,16 @@ pub struct B {
 }
 #[test]
 fn bindgen_test_layout_B() {
-    assert_eq!(::std::mem::size_of::<B>(), 4usize, "Size of B");
-    assert_eq!(::std::mem::align_of::<B>(), 4usize, "Alignment of B");
+    assert_eq!(
+        ::std::mem::size_of::<B>(),
+        4usize,
+        concat!("Size of: ", stringify!(B))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<B>(),
+        4usize,
+        concat!("Alignment of ", stringify!(B))
+    );
 }
 impl Clone for B {
     fn clone(&self) -> Self {
@@ -195,7 +217,9 @@ impl B {
     #[inline]
     pub fn foo(&self) -> ::std::os::raw::c_uint {
         unsafe {
-            ::std::mem::transmute(self._bitfield_1.as_ref().get(0usize, 31u8) as u32)
+            ::std::mem::transmute(
+                self._bitfield_1.as_ref().get(0usize, 31u8) as u32
+            )
         }
     }
     #[inline]
@@ -208,7 +232,9 @@ impl B {
     #[inline]
     pub fn bar(&self) -> ::std::os::raw::c_uchar {
         unsafe {
-            ::std::mem::transmute(self._bitfield_1.as_ref().get(31usize, 1u8) as u8)
+            ::std::mem::transmute(
+                self._bitfield_1.as_ref().get(31usize, 1u8) as u8
+            )
         }
     }
     #[inline]
@@ -223,25 +249,16 @@ impl B {
         foo: ::std::os::raw::c_uint,
         bar: ::std::os::raw::c_uchar,
     ) -> __BindgenBitfieldUnit<[u8; 4usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> = Default::default();
-        __bindgen_bitfield_unit
-            .set(
-                0usize,
-                31u8,
-                {
-                    let foo: u32 = unsafe { ::std::mem::transmute(foo) };
-                    foo as u64
-                },
-            );
-        __bindgen_bitfield_unit
-            .set(
-                31usize,
-                1u8,
-                {
-                    let bar: u8 = unsafe { ::std::mem::transmute(bar) };
-                    bar as u64
-                },
-            );
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 4usize]> =
+            Default::default();
+        __bindgen_bitfield_unit.set(0usize, 31u8, {
+            let foo: u32 = unsafe { ::std::mem::transmute(foo) };
+            foo as u64
+        });
+        __bindgen_bitfield_unit.set(31usize, 1u8, {
+            let bar: u8 = unsafe { ::std::mem::transmute(bar) };
+            bar as u64
+        });
         __bindgen_bitfield_unit
     }
 }
@@ -257,7 +274,7 @@ fn bindgen_test_layout_HasBigBitfield() {
     assert_eq!(
         ::std::mem::size_of::<HasBigBitfield>(),
         16usize,
-        "Size of HasBigBitfield",
+        concat!("Size of: ", stringify!(HasBigBitfield))
     );
 }
 impl Clone for HasBigBitfield {

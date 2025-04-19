@@ -22,7 +22,6 @@ that are transitively included.
 * [`bindgen::Builder::blocklist_function`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.blocklist_function)
 * [`bindgen::Builder::blocklist_item`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.blocklist_item)
 * [`bindgen::Builder::blocklist_type`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.blocklist_type)
-* [`bindgen::Builder::blocklist_var`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.blocklist_var)
 
 ### Command Line
 
@@ -30,7 +29,6 @@ that are transitively included.
 * `--blocklist-function <function>`
 * `--blocklist-item <item>`
 * `--blocklist-type <type>`
-* `--blocklist-var <var>`
 
 
 ### Annotations

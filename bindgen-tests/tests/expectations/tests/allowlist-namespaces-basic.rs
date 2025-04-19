@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[allow(non_snake_case, non_camel_case_types, non_upper_case_globals)]
 pub mod root {
     #[allow(unused_imports)]
@@ -14,11 +20,19 @@ pub mod root {
             pub struct Helper {
                 pub _address: u8,
             }
-            #[allow(clippy::unnecessary_operation, clippy::identity_op)]
-            const _: () = {
-                ["Size of Helper"][::std::mem::size_of::<Helper>() - 1usize];
-                ["Alignment of Helper"][::std::mem::align_of::<Helper>() - 1usize];
-            };
+            #[test]
+            fn bindgen_test_layout_Helper() {
+                assert_eq!(
+                    ::std::mem::size_of::<Helper>(),
+                    1usize,
+                    concat!("Size of: ", stringify!(Helper))
+                );
+                assert_eq!(
+                    ::std::mem::align_of::<Helper>(),
+                    1usize,
+                    concat!("Alignment of ", stringify!(Helper))
+                );
+            }
         }
     }
 }

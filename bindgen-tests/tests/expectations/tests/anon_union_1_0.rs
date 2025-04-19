@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 pub struct __BindgenUnionField<T>(::std::marker::PhantomData<T>);
 impl<T> __BindgenUnionField<T> {
@@ -24,7 +30,7 @@ impl<T> ::std::default::Default for __BindgenUnionField<T> {
 impl<T> ::std::clone::Clone for __BindgenUnionField<T> {
     #[inline]
     fn clone(&self) -> Self {
-        *self
+        Self::new()
     }
 }
 impl<T> ::std::marker::Copy for __BindgenUnionField<T> {}
@@ -50,7 +56,8 @@ pub struct TErrorResult {
     pub mMightHaveUnreported: bool,
     pub mUnionState: TErrorResult_UnionState,
 }
-pub const TErrorResult_UnionState_HasException: TErrorResult_UnionState = TErrorResult_UnionState::HasMessage;
+pub const TErrorResult_UnionState_HasException: TErrorResult_UnionState =
+    TErrorResult_UnionState::HasMessage;
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum TErrorResult_UnionState {
@@ -70,7 +77,8 @@ pub struct TErrorResult_DOMExceptionInfo {
 #[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct TErrorResult__bindgen_ty_1 {
     pub mMessage: __BindgenUnionField<*mut TErrorResult_Message>,
-    pub mDOMExceptionInfo: __BindgenUnionField<*mut TErrorResult_DOMExceptionInfo>,
+    pub mDOMExceptionInfo:
+        __BindgenUnionField<*mut TErrorResult_DOMExceptionInfo>,
     pub bindgen_union_field: u64,
 }
 impl Default for TErrorResult {
@@ -89,11 +97,15 @@ pub struct ErrorResult {
 }
 #[test]
 fn bindgen_test_layout_ErrorResult() {
-    assert_eq!(::std::mem::size_of::<ErrorResult>(), 24usize, "Size of ErrorResult");
+    assert_eq!(
+        ::std::mem::size_of::<ErrorResult>(),
+        24usize,
+        concat!("Size of: ", stringify!(ErrorResult))
+    );
     assert_eq!(
         ::std::mem::align_of::<ErrorResult>(),
         8usize,
-        "Alignment of ErrorResult",
+        concat!("Alignment of ", stringify!(ErrorResult))
     );
 }
 impl Clone for ErrorResult {
@@ -115,11 +127,17 @@ fn __bindgen_test_layout_TErrorResult_open0_int_close0_instantiation() {
     assert_eq!(
         ::std::mem::size_of::<TErrorResult>(),
         24usize,
-        "Size of template specialization: TErrorResult_open0_int_close0",
+        concat!(
+            "Size of template specialization: ",
+            stringify!(TErrorResult)
+        )
     );
     assert_eq!(
         ::std::mem::align_of::<TErrorResult>(),
         8usize,
-        "Align of template specialization: TErrorResult_open0_int_close0",
+        concat!(
+            "Alignment of template specialization: ",
+            stringify!(TErrorResult)
+        )
     );
 }

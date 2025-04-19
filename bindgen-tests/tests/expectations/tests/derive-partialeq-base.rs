@@ -1,4 +1,10 @@
-#![allow(dead_code, non_snake_case, non_camel_case_types, non_upper_case_globals)]
+#![allow(
+    dead_code,
+    non_snake_case,
+    non_camel_case_types,
+    non_upper_case_globals
+)]
+
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Base {
@@ -6,14 +12,28 @@ pub struct Base {
 }
 #[test]
 fn bindgen_test_layout_Base() {
-    const UNINIT: ::std::mem::MaybeUninit<Base> = ::std::mem::MaybeUninit::uninit();
+    const UNINIT: ::std::mem::MaybeUninit<Base> =
+        ::std::mem::MaybeUninit::uninit();
     let ptr = UNINIT.as_ptr();
-    assert_eq!(::std::mem::size_of::<Base>(), 132usize, "Size of Base");
-    assert_eq!(::std::mem::align_of::<Base>(), 4usize, "Alignment of Base");
+    assert_eq!(
+        ::std::mem::size_of::<Base>(),
+        132usize,
+        concat!("Size of: ", stringify!(Base))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<Base>(),
+        4usize,
+        concat!("Alignment of ", stringify!(Base))
+    );
     assert_eq!(
         unsafe { ::std::ptr::addr_of!((*ptr).large) as usize - ptr as usize },
         0usize,
-        "Offset of field: Base::large",
+        concat!(
+            "Offset of field: ",
+            stringify!(Base),
+            "::",
+            stringify!(large)
+        )
     );
 }
 impl Default for Base {
@@ -40,12 +60,12 @@ fn bindgen_test_layout_ShouldDerivePartialEq() {
     assert_eq!(
         ::std::mem::size_of::<ShouldDerivePartialEq>(),
         132usize,
-        "Size of ShouldDerivePartialEq",
+        concat!("Size of: ", stringify!(ShouldDerivePartialEq))
     );
     assert_eq!(
         ::std::mem::align_of::<ShouldDerivePartialEq>(),
         4usize,
-        "Alignment of ShouldDerivePartialEq",
+        concat!("Alignment of ", stringify!(ShouldDerivePartialEq))
     );
 }
 impl Default for ShouldDerivePartialEq {

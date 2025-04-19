@@ -39,24 +39,19 @@
 
 // Re-export individual analyses.
 mod template_params;
-pub(crate) use self::template_params::UsedTemplateParameters;
+pub use self::template_params::UsedTemplateParameters;
 mod derive;
-pub use self::derive::DeriveTrait;
-pub(crate) use self::derive::{as_cannot_derive_set, CannotDerive};
+pub use self::derive::{as_cannot_derive_set, CannotDerive, DeriveTrait};
 mod has_vtable;
-pub(crate) use self::has_vtable::{
-    HasVtable, HasVtableAnalysis, HasVtableResult,
-};
+pub use self::has_vtable::{HasVtable, HasVtableAnalysis, HasVtableResult};
 mod has_destructor;
-pub(crate) use self::has_destructor::HasDestructorAnalysis;
+pub use self::has_destructor::HasDestructorAnalysis;
 mod has_type_param_in_array;
-pub(crate) use self::has_type_param_in_array::HasTypeParameterInArray;
+pub use self::has_type_param_in_array::HasTypeParameterInArray;
 mod has_float;
-pub(crate) use self::has_float::HasFloat;
+pub use self::has_float::HasFloat;
 mod sizedness;
-pub(crate) use self::sizedness::{
-    Sizedness, SizednessAnalysis, SizednessResult,
-};
+pub use self::sizedness::{Sizedness, SizednessAnalysis, SizednessResult};
 
 use crate::ir::context::{BindgenContext, ItemId};
 
@@ -78,7 +73,7 @@ use std::ops;
 ///
 /// For a simple example analysis, see the `ReachableFrom` type in the `tests`
 /// module below.
-pub(crate) trait MonotoneFramework: Sized + fmt::Debug {
+pub trait MonotoneFramework: Sized + fmt::Debug {
     /// The type of node in our dependency graph.
     ///
     /// This is just generic (and not `ItemId`) so that we can easily unit test
@@ -125,15 +120,20 @@ pub(crate) trait MonotoneFramework: Sized + fmt::Debug {
 
 /// Whether an analysis's `constrain` function modified the incremental results
 /// or not.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
-pub(crate) enum ConstrainResult {
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ConstrainResult {
     /// The incremental results were updated, and the fix-point computation
     /// should continue.
     Changed,
 
     /// The incremental results were not updated.
-    #[default]
     Same,
+}
+
+impl Default for ConstrainResult {
+    fn default() -> Self {
+        ConstrainResult::Same
+    }
 }
 
 impl ops::BitOr for ConstrainResult {
@@ -155,7 +155,7 @@ impl ops::BitOrAssign for ConstrainResult {
 }
 
 /// Run an analysis in the monotone framework.
-pub(crate) fn analyze<Analysis>(extra: Analysis::Extra) -> Analysis::Output
+pub fn analyze<Analysis>(extra: Analysis::Extra) -> Analysis::Output
 where
     Analysis: MonotoneFramework,
 {
@@ -174,7 +174,7 @@ where
 }
 
 /// Generate the dependency map for analysis
-pub(crate) fn generate_dependencies<F>(
+pub fn generate_dependencies<F>(
     ctx: &BindgenContext,
     consider_edge: F,
 ) -> HashMap<ItemId, Vec<ItemId>>
@@ -211,7 +211,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::HashSet;
+    use crate::{HashMap, HashSet};
 
     // Here we find the set of nodes that are reachable from any given
     // node. This is a lattice mapping nodes to subsets of all nodes. Our join
@@ -329,13 +329,20 @@ mod tests {
             // Yes, what follows is a **terribly** inefficient set union
             // implementation. Don't copy this code outside of this test!
 
-            let original_size = self.reachable.entry(node).or_default().len();
+            let original_size = self
+                .reachable
+                .entry(node)
+                .or_insert_with(HashSet::default)
+                .len();
 
             for sub_node in self.graph.0[&node].iter() {
                 self.reachable.get_mut(&node).unwrap().insert(*sub_node);
 
-                let sub_reachable =
-                    self.reachable.entry(*sub_node).or_default().clone();
+                let sub_reachable = self
+                    .reachable
+                    .entry(*sub_node)
+                    .or_insert_with(HashSet::default)
+                    .clone();
 
                 for transitive in sub_reachable {
                     self.reachable.get_mut(&node).unwrap().insert(transitive);

@@ -241,6 +241,3 @@ enum MyOrderedEnum {
   METER,
   LIGHTYEAR,
 };
-
-// Used to test custom derives on new-type alias. See `test_custom_derive`.
-typedef int TestDeriveOnAlias;

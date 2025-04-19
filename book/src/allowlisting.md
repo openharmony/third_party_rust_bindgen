@@ -20,7 +20,6 @@ transitively used by a definition that matches them.
 * [`bindgen::Builder::allowlist_function`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.allowlist_function)
 * [`bindgen::Builder::allowlist_var`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.allowlist_var)
 * [`bindgen::Builder::allowlist_file`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.allowlist_file)
-* [`bindgen::Builder::allowlist_item`](https://docs.rs/bindgen/latest/bindgen/struct.Builder.html#method.allowlist_item)
 
 ### Command Line
 
@@ -28,7 +27,6 @@ transitively used by a definition that matches them.
 * `--allowlist-function <function>`
 * `--allowlist-var <var>`
 * `--allowlist-file <path>`
-* `--allowlist-item <item>`
 
 ### Annotations
 

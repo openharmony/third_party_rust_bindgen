@@ -1,11 +1,11 @@
 use crate::codegen;
 use crate::ir::context::BindgenContext;
 use crate::ir::function::ClangAbi;
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::Ident;
 
 /// Used to build the output tokens for dynamic bindings.
 #[derive(Default)]
-pub(crate) struct DynamicItems {
+pub struct DynamicItems {
     /// Tracks the tokens that will appears inside the library struct -- e.g.:
     /// ```ignore
     /// struct Lib {
@@ -69,11 +69,11 @@ pub(crate) struct DynamicItems {
 }
 
 impl DynamicItems {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self::default()
     }
 
-    pub(crate) fn get_tokens(
+    pub fn get_tokens(
         &self,
         lib_ident: Ident,
         ctx: &BindgenContext,
@@ -90,6 +90,8 @@ impl DynamicItems {
         };
 
         quote! {
+            extern crate libloading;
+
             pub struct #lib_ident {
                 __library: ::libloading::Library,
                 #(#struct_members)*
@@ -122,7 +124,7 @@ impl DynamicItems {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn push_func(
+    pub(crate) fn push(
         &mut self,
         ident: Ident,
         abi: ClangAbi,
@@ -189,49 +191,6 @@ impl DynamicItems {
         } else {
             quote! {
                 let #ident = #library_get.map(|sym| *sym);
-            }
-        });
-
-        self.init_fields.push(quote! {
-            #ident
-        });
-    }
-
-    pub fn push_var(
-        &mut self,
-        ident: Ident,
-        ty: TokenStream,
-        is_required: bool,
-    ) {
-        let member = if is_required {
-            quote! { *mut #ty }
-        } else {
-            quote! { Result<*mut #ty, ::libloading::Error> }
-        };
-
-        self.struct_members.push(quote! {
-            pub #ident: #member,
-        });
-
-        let deref = if is_required {
-            quote! { self.#ident }
-        } else {
-            quote! { *self.#ident.as_ref().expect("Expected variable, got error.") }
-        };
-        self.struct_implementation.push(quote! {
-            pub unsafe fn #ident (&self) -> *mut #ty {
-                #deref
-            }
-        });
-
-        let ident_str = codegen::helpers::ast_ty::cstr_expr(ident.to_string());
-        self.constructor_inits.push(if is_required {
-            quote! {
-                let #ident = __library.get::<*mut #ty>(#ident_str).map(|sym| *sym)?;
-            }
-        } else {
-            quote! {
-                let #ident = __library.get::<*mut #ty>(#ident_str).map(|sym| *sym);
             }
         });
 
