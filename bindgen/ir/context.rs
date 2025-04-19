@@ -3137,19 +3137,5 @@ impl TemplateParameters for PartialType {
 fn unused_regex_diagnostic(item: &str, name: &str, _ctx: &BindgenContext) {
     warn!("unused option: {} {}", name, item);
 
-    #[cfg(feature = "experimental")]
-    if _ctx.options().emit_diagnostics {
-        use crate::diagnostics::{Diagnostic, Level};
 
-        Diagnostic::default()
-            .with_title(
-                format!("Unused regular expression: `{}`.", item),
-                Level::Warn,
-            )
-            .add_annotation(
-                format!("This regular expression was passed to `{}`.", name),
-                Level::Note,
-            )
-            .display();
-    }
 }

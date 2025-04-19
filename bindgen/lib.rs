@@ -41,7 +41,6 @@ pub mod callbacks;
 
 mod clang;
 #[cfg(feature = "experimental")]
-mod diagnostics;
 mod features;
 mod ir;
 mod parse;
@@ -50,7 +49,6 @@ mod regex_set;
 pub use codegen::{
     AliasVariation, EnumVariation, MacroTypeVariation, NonCopyUnionStyle,
 };
-#[cfg(feature = "__cli")]
 pub use features::RUST_TARGET_STRINGS;
 pub use features::{RustTarget, LATEST_STABLE_RUST};
 pub use ir::annotations::FieldVisibilityKind;
@@ -110,7 +108,6 @@ fn args_are_cpp(clang_args: &[Box<str>]) -> bool {
 
 bitflags! {
     /// A type used to indicate which kind of items we have to generate.
-    #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
     pub struct CodegenConfig: u32 {
         /// Whether to generate functions.
         const FUNCTIONS = 1 << 0;
@@ -587,24 +584,8 @@ impl BindgenOptions {
 }
 
 fn deprecated_target_diagnostic(target: RustTarget, _options: &BindgenOptions) {
-    warn!("The {} Rust target is deprecated. If you have a need to use this target please report it at https://github.com/rust-lang/rust-bindgen/issues", target);
 
-    #[cfg(feature = "experimental")]
-    if _options.emit_diagnostics {
-        use crate::diagnostics::{Diagnostic, Level};
 
-        let mut diagnostic = Diagnostic::default();
-        diagnostic.with_title(
-            format!("The {} Rust target is deprecated.", target),
-            Level::Warn,
-        );
-        diagnostic.add_annotation(
-            "This Rust target was passed to `--rust-target`",
-            Level::Info,
-        );
-        diagnostic.add_annotation("If you have a good reason to use this target please report it at https://github.com/rust-lang/rust-bindgen/issues", Level::Help);
-        diagnostic.display();
-    }
 }
 
 #[cfg(feature = "runtime")]
@@ -1052,18 +1033,7 @@ impl Bindings {
 fn rustfmt_non_fatal_error_diagnostic(msg: &str, _options: &BindgenOptions) {
     warn!("{}", msg);
 
-    #[cfg(feature = "experimental")]
-    if _options.emit_diagnostics {
-        use crate::diagnostics::{Diagnostic, Level};
 
-        Diagnostic::default()
-            .with_title(msg, Level::Warn)
-            .add_annotation(
-                "The bindings will be generated but not formatted.",
-                Level::Note,
-            )
-            .display();
-    }
 }
 
 impl std::fmt::Display for Bindings {

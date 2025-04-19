@@ -444,7 +444,6 @@ struct BindgenCommand {
     emit_diagnostics: bool,
     /// Generates completions for the specified SHELL, sends them to `stdout` and exits.
     #[arg(long, value_name = "SHELL")]
-    generate_shell_completions: Option<clap_complete::Shell>,
     /// Enables experimental features.
     #[arg(long)]
     experimental: bool,
@@ -579,22 +578,12 @@ where
         wrap_static_fns_suffix,
         default_visibility,
         emit_diagnostics,
-        generate_shell_completions,
         experimental: _,
         version,
         clang_args,
     } = command;
 
-    if let Some(shell) = generate_shell_completions {
-        clap_complete::generate(
-            shell,
-            &mut BindgenCommand::command(),
-            "bindgen",
-            &mut std::io::stdout(),
-        );
 
-        exit(0);
-    }
 
     if version {
         println!(

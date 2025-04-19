@@ -20,7 +20,6 @@ pub enum MacroParsingBehavior {
 /// A trait to allow configuring different kinds of types in different
 /// situations.
 pub trait ParseCallbacks: fmt::Debug {
-    #[cfg(feature = "__cli")]
     #[doc(hidden)]
     fn cli_args(&self) -> Vec<String> {
         vec![]

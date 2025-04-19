@@ -63,7 +63,6 @@ impl RegexSet {
         self.build_inner(record_matches, None)
     }
 
-    #[cfg(all(feature = "__cli", feature = "experimental"))]
     /// Construct a RegexSet from the set of entries we've accumulated and emit diagnostics if the
     /// name of the regex set is passed to it.
     ///
@@ -78,20 +77,6 @@ impl RegexSet {
         self.build_inner(record_matches, name)
     }
 
-    #[cfg(all(not(feature = "__cli"), feature = "experimental"))]
-    /// Construct a RegexSet from the set of entries we've accumulated and emit diagnostics if the
-    /// name of the regex set is passed to it.
-    ///
-    /// Must be called before calling `matches()`, or it will always return
-    /// false.
-    #[inline]
-    pub(crate) fn build_with_diagnostics(
-        &mut self,
-        record_matches: bool,
-        name: Option<&'static str>,
-    ) {
-        self.build_inner(record_matches, name)
-    }
 
     fn build_inner(
         &mut self,
@@ -146,59 +131,11 @@ fn invalid_regex_warning(
     err: regex::Error,
     name: &'static str,
 ) {
-    use crate::diagnostics::{Diagnostic, Level, Slice};
 
-    let mut diagnostic = Diagnostic::default();
 
-    match err {
-        regex::Error::Syntax(string) => {
-            if string.starts_with("regex parse error:\n") {
-                let mut source = String::new();
 
-                let mut parsing_source = true;
 
-                for line in string.lines().skip(1) {
-                    if parsing_source {
-                        if line.starts_with(' ') {
-                            source.push_str(line);
-                            source.push('\n');
-                            continue;
-                        }
-                        parsing_source = false;
-                    }
-                    let error = "error: ";
-                    if line.starts_with(error) {
-                        let (_, msg) = line.split_at(error.len());
-                        diagnostic.add_annotation(msg.to_owned(), Level::Error);
-                    } else {
-                        diagnostic.add_annotation(line.to_owned(), Level::Info);
-                    }
-                }
-                let mut slice = Slice::default();
-                slice.with_source(source);
-                diagnostic.add_slice(slice);
 
-                diagnostic.with_title(
-                    "Error while parsing a regular expression.",
-                    Level::Warn,
-                );
-            } else {
-                diagnostic.with_title(string, Level::Warn);
-            }
-        }
-        err => {
-            let err = err.to_string();
-            diagnostic.with_title(err, Level::Warn);
-        }
-    }
 
-    diagnostic.add_annotation(
-        format!("This regular expression was passed via `{}`.", name),
-        Level::Note,
-    );
 
-    if set.items.iter().any(|item| item.as_ref() == "*") {
-        diagnostic.add_annotation("Wildcard patterns \"*\" are no longer considered valid. Use \".*\" instead.", Level::Help);
-    }
-    diagnostic.display();
 }

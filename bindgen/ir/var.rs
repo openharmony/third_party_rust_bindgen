@@ -486,7 +486,6 @@ fn duplicated_macro_diagnostic(
 ) {
     warn!("Duplicated macro definition: {}", macro_name);
 
-    #[cfg(feature = "experimental")]
     // FIXME (pvdrz & amanjeev): This diagnostic message shows way too often to be actually
     // useful. We have to change the logic where this function is called to be able to emit this
     // message only when the duplication is an actual issue.
@@ -499,28 +498,8 @@ fn duplicated_macro_diagnostic(
     // ```
     //
     // Will trigger this message even though there's nothing wrong with it.
-    #[allow(clippy::overly_complex_bool_expr)]
-    if false && _ctx.options().emit_diagnostics {
-        use crate::diagnostics::{get_line, Diagnostic, Level, Slice};
-        use std::borrow::Cow;
 
-        let mut slice = Slice::default();
-        let mut source = Cow::from(macro_name);
 
-        let (file, line, col, _) = _location.location();
-        if let Some(filename) = file.name() {
-            if let Ok(Some(code)) = get_line(&filename, line) {
-                source = code.into();
-            }
-            slice.with_location(filename, line, col);
-        }
 
-        slice.with_source(source);
 
-        Diagnostic::default()
-            .with_title("Duplicated macro definition.", Level::Warn)
-            .add_slice(slice)
-            .add_annotation("This macro had a duplicate.", Level::Note)
-            .display();
-    }
 }

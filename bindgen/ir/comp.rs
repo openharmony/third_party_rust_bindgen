@@ -1,6 +1,5 @@
 //! Compound types (unions and structs) in our intermediate representation.
 
-use itertools::Itertools;
 
 use super::analysis::Sizedness;
 use super::annotations::Annotations;
@@ -496,7 +495,6 @@ where
         {
             let non_bitfields = raw_fields
                 .by_ref()
-                .peeking_take_while(|f| f.bitfield_width().is_none())
                 .map(|f| Field::DataMember(f.0));
             fields.extend(non_bitfields);
         }
@@ -506,7 +504,6 @@ where
         // the Itanium C++ ABI.
         let mut bitfields = raw_fields
             .by_ref()
-            .peeking_take_while(|f| f.bitfield_width().is_some())
             .peekable();
 
         if bitfields.peek().is_none() {

@@ -128,7 +128,6 @@ fn root_import(
 }
 
 bitflags! {
-    #[derive(Copy, Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
     struct DerivableTraits: u16 {
         const DEBUG       = 1 << 0;
         const DEFAULT     = 1 << 1;
@@ -4340,15 +4339,6 @@ impl TryToRustTy for FunctionSig {
                 syn::parse_quote! { unsafe extern #abi fn ( #( #arguments ),* ) #ret },
             ),
             Err(err) => {
-                if matches!(err, error::Error::UnsupportedAbi(_)) {
-                    unsupported_abi_diagnostic(
-                        self.name(),
-                        self.is_variadic(),
-                        item.location(),
-                        ctx,
-                        &err,
-                    );
-                }
 
                 Err(err)
             }
@@ -4391,7 +4381,6 @@ impl CodeGenerator for Function {
             if signature.is_variadic() {
                 // We cannot generate wrappers for variadic static functions so we avoid
                 // generating any code for them.
-                variadic_fn_diagnostic(self.name(), item.location(), ctx);
                 return None;
             }
         }
@@ -4457,13 +4446,6 @@ impl CodeGenerator for Function {
         let abi = match signature.abi(ctx, Some(name)) {
             Err(err) => {
                 if matches!(err, error::Error::UnsupportedAbi(_)) {
-                    unsupported_abi_diagnostic(
-                        name,
-                        signature.is_variadic(),
-                        item.location(),
-                        ctx,
-                        &err,
-                    );
                 }
 
                 return None;
@@ -4592,102 +4574,18 @@ impl CodeGenerator for Function {
     }
 }
 
-#[cfg_attr(not(feature = "experimental"), allow(unused_variables))]
-fn unsupported_abi_diagnostic(
-    fn_name: &str,
-    variadic: bool,
-    location: Option<&crate::clang::SourceLocation>,
-    ctx: &BindgenContext,
-    error: &error::Error,
-) {
-    warn!(
-        "Skipping {}function `{}` because the {}",
-        if variadic { "variadic " } else { "" },
-        fn_name,
-        error
-    );
 
-    #[cfg(feature = "experimental")]
-    if ctx.options().emit_diagnostics {
-        use crate::diagnostics::{get_line, Diagnostic, Level, Slice};
 
-        let mut diag = Diagnostic::default();
-        diag.with_title(
-            format!(
-                "Skipping {}function `{}` because the {}",
-                if variadic { "variadic " } else { "" },
-                fn_name,
-                error
-            ),
-            Level::Warn,
-        )
-        .add_annotation(
-            "No code will be generated for this function.",
-            Level::Warn,
-        )
-        .add_annotation(
-            format!(
-                "The configured Rust version is {}.",
-                ctx.options().rust_target
-            ),
-            Level::Note,
-        );
 
-        if let Some(loc) = location {
-            let (file, line, col, _) = loc.location();
 
-            if let Some(filename) = file.name() {
-                if let Ok(Some(source)) = get_line(&filename, line) {
-                    let mut slice = Slice::default();
-                    slice
-                        .with_source(source)
-                        .with_location(filename, line, col);
-                    diag.add_slice(slice);
-                }
-            }
-        }
 
-        diag.display()
-    }
-}
 
-fn variadic_fn_diagnostic(
-    fn_name: &str,
-    _location: Option<&crate::clang::SourceLocation>,
-    _ctx: &BindgenContext,
-) {
-    warn!(
-        "Cannot generate wrapper for the static variadic function `{}`.",
-        fn_name,
-    );
 
-    #[cfg(feature = "experimental")]
-    if _ctx.options().emit_diagnostics {
-        use crate::diagnostics::{get_line, Diagnostic, Level, Slice};
 
-        let mut diag = Diagnostic::default();
 
-        diag.with_title(format!("Cannot generate wrapper for the static function `{}`.", fn_name), Level::Warn)
-            .add_annotation("The `--wrap-static-fns` feature does not support variadic functions.", Level::Note)
-            .add_annotation("No code will be generated for this function.", Level::Note);
 
-        if let Some(loc) = _location {
-            let (file, line, col, _) = loc.location();
 
-            if let Some(filename) = file.name() {
-                if let Ok(Some(source)) = get_line(&filename, line) {
-                    let mut slice = Slice::default();
-                    slice
-                        .with_source(source)
-                        .with_location(filename, line, col);
-                    diag.add_slice(slice);
-                }
-            }
-        }
 
-        diag.display()
-    }
-}
 
 fn objc_method_codegen(
     ctx: &BindgenContext,
