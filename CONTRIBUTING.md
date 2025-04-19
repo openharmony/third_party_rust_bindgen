@@ -11,6 +11,8 @@ and introduce yourself.
 - [Code of Conduct](#code-of-conduct)
 - [Filing an Issue](#filing-an-issue)
 - [Looking to Start Contributing to `bindgen`?](#looking-to-start-contributing-to-bindgen)
+- [Prerequisites](#prerequisites)
+  - [`rustfmt` / `cargo fmt`](#rustfmt--cargo-fmt)
 - [Building](#building)
 - [Testing](#testing)
   - [Overview](#overview)
@@ -33,9 +35,11 @@ and introduce yourself.
   - [Writing a Predicate Script](#writing-a-predicate-script)
 - [Cutting a new bindgen release](#cutting-a-new-bindgen-release)
   - [Updating the changelog](#updating-the-changelog)
-  - [Bumping the version numbers.](#bumping-the-version-numbers)
   - [Merge to `main`](#merge-to-main)
-  - [Publish and add a git tag for the right commit](#publish-and-add-a-git-tag-for-the-right-commit)
+  - [Tag and publish](#tag-and-publish)
+  - [Create a new release on Github](#create-a-new-release-on-github)
+  - [What to do if a Github release fails](#what-to-do-if-a-github-release-fails)
+  - [Create a new crates.io release](#create-a-new-cratesio-release)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -43,7 +47,7 @@ and introduce yourself.
 
 We abide by the [Rust Code of Conduct][coc] and ask that you do as well.
 
-[coc]: https://www.rust-lang.org/en-US/conduct.html
+[coc]: https://www.rust-lang.org/policies/code-of-conduct
 
 ## Filing an Issue
 
@@ -54,7 +58,7 @@ issue, provide us with:
 * The `bindgen` flags used to reproduce the issue with the header file
 * The expected `bindgen` output
 * The actual `bindgen` output
-* The [debugging logs](#logs) generated when running `bindgen` on this testcase
+* The [debugging logs](#debug-logging) generated when running `bindgen` on this testcase
 
 ## Looking to Start Contributing to `bindgen`?
 
@@ -62,6 +66,17 @@ issue, provide us with:
 * [Issues labeled "less easy"](https://github.com/rust-lang/rust-bindgen/issues?q=is%3Aopen+is%3Aissue+label%3AE-less-easy)
 * [Issues labeled "help wanted"](https://github.com/rust-lang/rust-bindgen/labels/help%20wanted)
 * Still can't find something to work on? [Drop a comment here](https://github.com/rust-lang/rust-bindgen/issues/747)
+
+## Prerequisites
+
+### `rustfmt` / `cargo fmt`
+
+We use `nightly` channel for `rustfmt`,
+so please set the appropriate setting in your editor/IDE for that.
+
+For rust-analyzer, you can set `rustfmt.extraArgs = ['+nightly']`.
+
+To check via command line, you can run `cargo +nightly fmt --check`.
 
 ## Building
 
@@ -79,14 +94,6 @@ versions of llvm, or specify the path of the desired libclang explicitly:
 $ export LIBCLANG_PATH=path/to/clang-9.0/lib
 ```
 
-Additionally, you may want to build and test with the `testing_only_docs`
-feature to ensure that you aren't forgetting to document types and functions. CI
-will catch it if you forget, but the turn around will be a lot slower ;)
-
-```
-$ cargo build --features testing_only_docs
-```
-
 ## Testing
 
 ### Overview
@@ -100,17 +107,17 @@ There are also some integration tests in the `./bindgen-integration` crate, whic
 generate bindings to some C++ code, and then uses the bindings, asserting that
 values are what we expect them to be, both on the Rust and C++ side.
 
-The generated and expected bindings are run through `rustfmt` before they are
-compared. Make sure you have `rustfmt` up to date:
-
-```
-$ rustup update nightly
-$ rustup component add rustfmt --toolchain nightly
-```
+The generated and expected bindings are formatted with [prettyplease] before they are
+compared. It is a default (but optional) dependency of `bindgen`,
+so be sure to keep that in mind
+(if you built `bindgen` with the `--no-default-features` option of Cargo).
+Note also that `rustfmt` formatting is disabled for the `bindgen-tests/tests/expectations/`
+directory tree, which helps avoid failing ui tests.
 
 Note: running `cargo test` from the root directory of `bindgen`'s repository does not
 automatically test the generated bindings or run the integration tests.
 These steps must be performed manually when needed.
+
 
 ### Testing Bindings Generation
 
@@ -157,10 +164,10 @@ $ cargo test
 
 ### Testing a Single Header's Bindings Generation and Compiling its Bindings
 
-Note: You will to need to install [Graphviz](https://graphviz.org/) since that
+Note: You will need to install [Graphviz](https://graphviz.org/) since that
 is a dependency for running `test-one.sh`.
 
-Sometimes its useful to work with one test header from start (generating
+Sometimes it's useful to work with one test header from start (generating
 bindings for it) to finish (compiling the bindings and running their layout
 tests). This can be done with the `bindgen-tests/tests/test-one.sh` script. It supports fuzzy
 searching for test headers. For example, to test
@@ -203,13 +210,13 @@ can add multiple test expectations, one for each supported `libclang`
 version. Instead of having a single `bindgen-tests/tests/expectations/tests/my_test.rs` file,
 add each of:
 
+* `bindgen-tests/tests/expectations/tests/libclang-16/my_test.rs`
 * `bindgen-tests/tests/expectations/tests/libclang-9/my_test.rs`
-* `bindgen-tests/tests/expectations/tests/libclang-5/my_test.rs`
 
 If you need to update the test expectations for a test file that generates
 different bindings for different `libclang` versions, you *don't* need to have
-many version of `libclang` installed locally. Just make a work-in-progress pull
-request, and then when Travis CI fails, it will log a diff of the
+many versions of `libclang` installed locally. Just make a work-in-progress pull
+request, and then when CI fails, it will log a diff of the
 expectations. Use the diff to patch the appropriate expectation file locally and
 then update your pull request.
 
@@ -218,14 +225,8 @@ have. If for some reason it can't, you can force a specific `libclang` version
 to check the bindings against with a cargo feature:
 
 ```
-$ cargo test --features testing_only_libclang_$VERSION
+$ cargo test --features __testing_only_libclang_$VERSION
 ```
-
-Where `$VERSION` is one of:
-
-* `4`
-* `3_9`
-* `3_8`
 
 depending on which version of `libclang` you have installed.
 
@@ -351,7 +352,7 @@ changes should be squashed into the original commit.
 Unsure who to ask for review? Ask any of:
 
 * `@emilio`
-* `@fitzgen`
+* `@pvdrz`
 
 More resources:
 
@@ -424,7 +425,7 @@ $ brew install creduce
 $ # Etc...
 ```
 
-Otherwise, follow [these instructions](https://github.com/csmith-project/creduce/blob/main/INSTALL.md) for building and/or installing `creduce`.
+Otherwise, follow [these instructions](https://github.com/csmith-project/creduce/blob/master/INSTALL.md) for building and/or installing `creduce`.
 
 Running `creduce` requires two things:
 
@@ -489,10 +490,11 @@ to fail to compile `bindgen`'s emitted bindings, you can invoke `predicate.py`
 like this:
 
 ```bash
+# the rustc-grep argument expects a regex, thus escape where necessary
 path/to/rust-bindgen/csmith-fuzzing/predicate.py \
     --bindings-grep NameOfTheStructThatIsErroneouslyDerivingEq \
     --expect-compile-fail \
-    --rustc-grep 'error[E0277]: the trait bound `f64: std::cmp::Eq` is not satisfied' \
+    --rustc-grep 'error\[E0277\]: the trait bound `f64: std::cmp::Eq` is not satisfied' \
     ./isolated-test-case.h
 ```
 
@@ -537,21 +539,11 @@ like the following is a useful way to check what has landed:
  $ git log --oneline v0.62.0..HEAD
  ```
 
-Also worth checking the [next-release tag](https://github.com/rust-lang/rust-bindgen/pulls?q=is%3Apr+label%3Anext-release).
-
-Once that's done and the changelog is up-to-date, run `doctoc` on it.
-
-If needed, install it locally by running:
-
-```
-$ npm install doctoc
-$ ./node_modules/doctoc/doctoc.js CHANGELOG.md
-```
-
-### Bumping the version numbers.
-
-Bump version numbers as needed. Run tests just to ensure everything is working
-as expected.
+Also worth checking the [next-release
+tag](https://github.com/rust-lang/rust-bindgen/pulls?q=is%3Apr+label%3Anext-release).
+It is very important that you do not rename the `Unreleased` section of the
+changelog as this will be done automatically using `cargo release` on a further
+step.
 
 ### Merge to `main`
 
@@ -559,13 +551,73 @@ For regular releases, the changes above should end up in `main` before
 publishing. For dot-releases of an old version (e.g., cherry-picking an
 important fix) you can skip this.
 
-### Publish and add a git tag for the right commit
+### Tag and publish
 
-Once you're in the right commit, do:
+Once you're in `main`. Remember to install `doctoc` by running:
+```
+npm install doctoc
+```
+
+And then run:
+```
+cargo release [patch|minor] --no-publish --execute
+```
+
+This does the following:
+
+- Bump the version.
+- Turn the `Unreleased` section of the changelog into the section for the version being released.
+- Update the table of contents of the changelog using `doctoc`.
+- Tag (`git tag`) the HEAD commit
+- Push (`git push`) to GitHub
+
+The `patch` and `minor` refer to semver concepts:
+
+- `patch` would bump __v0.68.1__ to __v0.68.2__
+- `minor` would bump __v0.68.2__ to __v0.69.0__
+
+> NOTE:
+> We use the `--no-publish` so that the crates are only published after the release is complete.
+> This is automatic, provided the release CI job is successful.
+
+### Create a new release on Github
+
+The release is automated with the help of `.github/workflows/release.yml`,
+and will only be created...
+
+- when a Git tag is pushed
+- when all tests succeed
+
+While the tests are still running,
+a draft GitHub release will be created,
+to avoid notifying watchers of the repo should a CI step fail.
+
+If everything succeeds,
+tarballs containing bindgen cli executables for Linux and MacOS
+(both for x86 and Arm) will be created.
+See `[workspace.metadata.dist]` section in Cargo.toml for the configuration.
+
+To update the release configuration,
+when a new cargo-dist is available:
 
 ```
-$ git tag -a v0.62.1 # With the right version of course
-$ pushd bindgen && cargo publish && popd
-$ pushd bindgen-cli && cargo publish && popd
-$ git push --tags upstream # To publish the tag
+cargo dist init # from "cargo install cargo-dist"
 ```
+
+### What to do if a Github release fails
+
+If the release process fails after you run `cargo release`, you can manually
+delete the tag and release from Github. Also remember to delete the tag locally
+by running `git tag -d`. Once all the extra changes are in the `main` branch,
+you can trigger a release by creating a new tag using `git tag` and push it
+using `git push --tag`.
+
+### Create a new crates.io release
+
+Go to [the Publish
+workflow](https://github.com/rust-lang/rust-bindgen/actions/workflows/publish.yml)
+and run a new workflow using the "Run Workflow" button.
+
+Remember that crates.io releases cannot be deleted!
+
+[prettyplease]: https://github.com/dtolnay/prettyplease
