@@ -11,13 +11,13 @@ use crate::callbacks::{ItemInfo, ItemKind, MacroParsingBehavior};
 use crate::clang;
 use crate::clang::ClangToken;
 use crate::parse::{ClangSubItemParser, ParseError, ParseResult};
-use cexpr;
+
 use std::io;
 use std::num::Wrapping;
 
 /// The type for a constant variable.
 #[derive(Debug)]
-pub enum VarType {
+pub(crate) enum VarType {
     /// A boolean.
     Bool(bool),
     /// An integer.
@@ -32,11 +32,13 @@ pub enum VarType {
 
 /// A `Var` is our intermediate representation of a variable.
 #[derive(Debug)]
-pub struct Var {
+pub(crate) struct Var {
     /// The name of the variable.
     name: String,
     /// The mangled name of the variable.
     mangled_name: Option<String>,
+    /// The link name of the variable.
+    link_name: Option<String>,
     /// The type of the variable.
     ty: TypeId,
     /// The value of the variable, that needs to be suitable for `ty`.
@@ -47,9 +49,10 @@ pub struct Var {
 
 impl Var {
     /// Construct a new `Var`.
-    pub fn new(
+    pub(crate) fn new(
         name: String,
         mangled_name: Option<String>,
+        link_name: Option<String>,
         ty: TypeId,
         val: Option<VarType>,
         is_const: bool,
@@ -58,6 +61,7 @@ impl Var {
         Var {
             name,
             mangled_name,
+            link_name,
             ty,
             val,
             is_const,
@@ -65,28 +69,33 @@ impl Var {
     }
 
     /// Is this variable `const` qualified?
-    pub fn is_const(&self) -> bool {
+    pub(crate) fn is_const(&self) -> bool {
         self.is_const
     }
 
     /// The value of this constant variable, if any.
-    pub fn val(&self) -> Option<&VarType> {
+    pub(crate) fn val(&self) -> Option<&VarType> {
         self.val.as_ref()
     }
 
     /// Get this variable's type.
-    pub fn ty(&self) -> TypeId {
+    pub(crate) fn ty(&self) -> TypeId {
         self.ty
     }
 
     /// Get this variable's name.
-    pub fn name(&self) -> &str {
+    pub(crate) fn name(&self) -> &str {
         &self.name
     }
 
     /// Get this variable's mangled name.
-    pub fn mangled_name(&self) -> Option<&str> {
+    pub(crate) fn mangled_name(&self) -> Option<&str> {
         self.mangled_name.as_deref()
+    }
+
+    /// Get this variable's link name.
+    pub fn link_name(&self) -> Option<&str> {
+        self.link_name.as_deref()
     }
 }
 
@@ -120,27 +129,23 @@ fn default_macro_constant_type(ctx: &BindgenContext, value: i64) -> IntKind {
         ctx.options().default_macro_constant_type ==
             MacroTypeVariation::Signed
     {
-        if value < i32::min_value() as i64 || value > i32::max_value() as i64 {
+        if value < i32::MIN as i64 || value > i32::MAX as i64 {
             IntKind::I64
         } else if !ctx.options().fit_macro_constants ||
-            value < i16::min_value() as i64 ||
-            value > i16::max_value() as i64
+            value < i16::MIN as i64 ||
+            value > i16::MAX as i64
         {
             IntKind::I32
-        } else if value < i8::min_value() as i64 ||
-            value > i8::max_value() as i64
-        {
+        } else if value < i8::MIN as i64 || value > i8::MAX as i64 {
             IntKind::I16
         } else {
             IntKind::I8
         }
-    } else if value > u32::max_value() as i64 {
+    } else if value > u32::MAX as i64 {
         IntKind::U64
-    } else if !ctx.options().fit_macro_constants ||
-        value > u16::max_value() as i64
-    {
+    } else if !ctx.options().fit_macro_constants || value > u16::MAX as i64 {
         IntKind::U32
-    } else if value > u8::max_value() as i64 {
+    } else if value > u8::MAX as i64 {
         IntKind::U16
     } else {
         IntKind::U8
@@ -213,7 +218,7 @@ impl ClangSubItemParser for Var {
 
                 if previously_defined {
                     let name = String::from_utf8(id).unwrap();
-                    warn!("Duplicated macro definition: {}", name);
+                    duplicated_macro_diagnostic(&name, cursor.location(), ctx);
                     return Err(ParseError::Continue);
                 }
 
@@ -234,7 +239,7 @@ impl ClangSubItemParser for Var {
                                 c as u8
                             }
                             CChar::Raw(c) => {
-                                assert!(c <= ::std::u8::MAX as u64);
+                                assert!(c <= u8::MAX as u64);
                                 c as u8
                             }
                         };
@@ -267,7 +272,7 @@ impl ClangSubItemParser for Var {
                 let ty = Item::builtin_type(type_kind, true, ctx);
 
                 Ok(ParseResult::New(
-                    Var::new(name, None, ty, Some(val), true),
+                    Var::new(name, None, None, ty, Some(val), true),
                     Some(cursor),
                 ))
             }
@@ -290,6 +295,13 @@ impl ClangSubItemParser for Var {
                     warn!("Empty constant name?");
                     return Err(ParseError::Continue);
                 }
+
+                let link_name = ctx.options().last_callback(|callbacks| {
+                    callbacks.generated_link_name_override(ItemInfo {
+                        name: name.as_str(),
+                        kind: ItemKind::Var,
+                    })
+                });
 
                 let ty = cursor.cur_type();
 
@@ -360,7 +372,8 @@ impl ClangSubItemParser for Var {
                 };
 
                 let mangling = cursor_mangling(ctx, &cursor);
-                let var = Var::new(name, mangling, ty, value, is_const);
+                let var =
+                    Var::new(name, mangling, link_name, ty, value, is_const);
 
                 Ok(ParseResult::New(var, Some(cursor)))
             }
@@ -372,9 +385,51 @@ impl ClangSubItemParser for Var {
     }
 }
 
+/// This function uses a [`FallbackTranslationUnit`][clang::FallbackTranslationUnit] to parse each
+/// macro that cannot be parsed by the normal bindgen process for `#define`s.
+///
+/// To construct the [`FallbackTranslationUnit`][clang::FallbackTranslationUnit], first precompiled
+/// headers are generated for all input headers. An empty temporary `.c` file is generated to pass
+/// to the translation unit. On the evaluation of each macro, a [`String`] is generated with the
+/// new contents of the empty file and passed in for reparsing. The precompiled headers and
+/// preservation of the [`FallbackTranslationUnit`][clang::FallbackTranslationUnit] across macro
+/// evaluations are both optimizations that have significantly improved the performance.
+fn parse_macro_clang_fallback(
+    ctx: &mut BindgenContext,
+    cursor: &clang::Cursor,
+) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
+    if !ctx.options().clang_macro_fallback {
+        return None;
+    }
+
+    let ftu = ctx.try_ensure_fallback_translation_unit()?;
+    let contents = format!("int main() {{ {}; }}", cursor.spelling(),);
+    ftu.reparse(&contents).ok()?;
+    // Children of root node of AST
+    let root_children = ftu.translation_unit().cursor().collect_children();
+    // Last child in root is function declaration
+    // Should be FunctionDecl
+    let main_func = root_children.last()?;
+    // Children should all be statements in function declaration
+    let all_stmts = main_func.collect_children();
+    // First child in all_stmts should be the statement containing the macro to evaluate
+    // Should be CompoundStmt
+    let macro_stmt = all_stmts.first()?;
+    // Children should all be expressions from the compound statement
+    let paren_exprs = macro_stmt.collect_children();
+    // First child in all_exprs is the expression utilizing the given macro to be evaluated
+    // Should  be ParenExpr
+    let paren = paren_exprs.first()?;
+
+    Some((
+        cursor.spelling().into_bytes(),
+        cexpr::expr::EvalResult::Int(Wrapping(paren.evaluate()?.as_int()?)),
+    ))
+}
+
 /// Try and parse a macro using all the macros parsed until now.
 fn parse_macro(
-    ctx: &BindgenContext,
+    ctx: &mut BindgenContext,
     cursor: &clang::Cursor,
 ) -> Option<(Vec<u8>, cexpr::expr::EvalResult)> {
     use cexpr::expr;
@@ -385,7 +440,7 @@ fn parse_macro(
 
     match parser.macro_definition(&cexpr_tokens) {
         Ok((_, (id, val))) => Some((id.into(), val)),
-        _ => None,
+        _ => parse_macro_clang_fallback(ctx, cursor),
     }
 }
 
@@ -422,4 +477,29 @@ fn get_integer_literal_from_cursor(cursor: &clang::Cursor) -> Option<i64> {
         }
     });
     value
+}
+
+fn duplicated_macro_diagnostic(
+    macro_name: &str,
+    _location: crate::clang::SourceLocation,
+    _ctx: &BindgenContext,
+) {
+    warn!("Duplicated macro definition: {}", macro_name);
+
+    // FIXME (pvdrz & amanjeev): This diagnostic message shows way too often to be actually
+    // useful. We have to change the logic where this function is called to be able to emit this
+    // message only when the duplication is an actual issue.
+    //
+    // If I understood correctly, `bindgen` ignores all `#undef` directives. Meaning that this:
+    // ```c
+    // #define FOO 1
+    // #undef FOO
+    // #define FOO 2
+    // ```
+    //
+    // Will trigger this message even though there's nothing wrong with it.
+
+
+
+
 }
