@@ -3,7 +3,7 @@
     "Name": "bindgen",
     "License": "BSD-3-Clause-LBNL",
     "License File": "LICENSE",
-    "Version Number": "v0.64.0",
+    "Version Number": "v0.70.1",
     "Owner": "fangting12@huawei.com",
     "Upstream URL": "https://github.com/rust-lang/rust-bindgen",
     "Description": "A tool that automatically generates Rust bindings for C and C++ libraries.",
