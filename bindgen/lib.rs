@@ -107,6 +107,7 @@ fn args_are_cpp(clang_args: &[Box<str>]) -> bool {
 }
 
 bitflags! {
+    #[derive(Copy, Clone, Debug)]
     /// A type used to indicate which kind of items we have to generate.
     pub struct CodegenConfig: u32 {
         /// Whether to generate functions.
