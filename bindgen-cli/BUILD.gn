@@ -38,4 +38,6 @@ ohos_cargo_crate("bindgen") {
     "static",
     "which-rustfmt",
   ]
+  part_name = "rust_bindgen"
+  subsystem_name = "thirdparty"
 }
